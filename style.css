@@ -1,0 +1,22 @@
+/* Basic body styling */
+body {
+    font-family: sans-serif;
+    margin: 0; /* Often good to reset default margin */
+    padding: 20px;
+    background-color: #f4f4f4; /* A light background */
+}
+
+/* Page title styling */
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+/* Set the size and appearance of the div that contains the map */
+#map {
+    height: 500px; /* You can adjust this */
+    width: 80%;    /* Example: 80% of the page width */
+    margin: 20px auto; /* Center the map container */
+    border: 2px solid #aaa;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: a subtle shadow */
+}
