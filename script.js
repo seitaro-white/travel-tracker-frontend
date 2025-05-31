@@ -14,6 +14,50 @@ document.addEventListener('DOMContentLoaded', function () {
     }).addTo(map);
 
     // --- Future additions will go here ---
+    function addGeoJsonTrack(trackUrl) {
+            fetch(trackUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json(); // Parse the response body as JSON
+                })
+                .then(geojsonFeature => {
+                    // Successfully loaded and parsed the GeoJSON
+                    L.geoJSON(geojsonFeature, {
+                        style: function (feature) {
+                            return {
+                                color: "green",
+                                weight: 3,
+                                opacity: 0.8
+                            };
+                        }
+                        // You can also add onEachFeature to bind popups, etc.
+                        // onEachFeature: function (feature, layer) {
+                        //    if (feature.properties && feature.properties.name) {
+                        //        layer.bindPopup(feature.properties.name);
+                        //    }
+                        // }
+                    }).addTo(map);
+
+                    // Optional: Fit the map bounds to the loaded track
+                    // This might be a bit aggressive if you load multiple tracks
+                    // or have other points of interest.
+                    // You might want to collect all bounds and fit once.
+                    // var trackLayer = L.geoJSON(geojsonFeature);
+                    // map.fitBounds(trackLayer.getBounds());
+
+                })
+                .catch(error => {
+                    console.error('Error loading or parsing GeoJSON track:', error);
+                });
+    }
+
+    addGeoJsonTrack('data/polyline_output.geojson')
+    addGeoJsonTrack('data/public_transport_out.geojson')
+
+
+
 
     // Example: Add a marker for Tokyo
     var tokyoMarker = L.marker([35.6895, 139.6917]).addTo(map);
