@@ -1,12 +1,10 @@
 // Wait for the DOM to be fully loaded before running map logic
-// This is good practice, especially if your script tag is in the <head> without 'defer'.
-// If your script tag is at the end of <body>, this wrapper is less critical but still safe.
 document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize the map and set its view to Japan's coordinates and a good zoom level
     // Coordinates for central Japan (approx): [36.2048, 138.2529]
     // Zoom level 5 or 6 is usually good for a country overview
-    var map = L.map('map').setView([36.2048, 138.2529], 6);
+    var map = L.map('map').setView([36.2048, 138.2529], 5.7);
 
     // Add a tile layer (the basemap)
     // Using OpenStreetMap tiles here.
