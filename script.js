@@ -17,14 +17,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     }).addTo(map);
 
     // --- Future additions will go here ---
-    function loadGeoJson(trackUrl, styleOptions) { // Added styleOptions parameter
+    function loadGeoJson(trackUrl, styleOptions, onEachFeatureCallback) { // Added onEachFeatureCallback parameter
         return fetch(trackUrl)
+            // Check if the response is ok (status in the range 200-299)
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok ' + response.statusText);
                 }
                 return response.json();
             })
+            // Define styles
             .then(geojsonFeature => {
                 const defaultStyle = {
                     color: "blue", // Default color
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 };
                 const currentStyle = styleOptions || defaultStyle; // Use passed options or default
 
-                return L.geoJSON(geojsonFeature, {
+                const geoJsonLayerOptions = {
                     style: function (feature) {
                         // If styleOptions is a function, call it. Otherwise, use it as an object.
                         if (typeof currentStyle === 'function') {
@@ -41,7 +43,14 @@ document.addEventListener('DOMContentLoaded', async function () {
                         }
                         return currentStyle;
                     }
-                });
+                };
+
+                // Add in onEachFeature
+                if (onEachFeatureCallback) {
+                    geoJsonLayerOptions.onEachFeature = onEachFeatureCallback;
+                }
+
+                return L.geoJSON(geojsonFeature, geoJsonLayerOptions);
             })
             .catch(error => {
                 console.error('Error loading or parsing GeoJSON track:', error);
@@ -51,32 +60,43 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
     const public_transport = await loadGeoJson(
-        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport);
+        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport, null);
     if (public_transport) {
         public_transport.addTo(map);
     }
 
 
     const walking = await loadGeoJson(
-        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
+        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking, null);
     if (walking) {
         walking.addTo(map);
     }
 
     const cycling = await loadGeoJson(
-        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
+        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling, null);
     if (cycling) {
         cycling.addTo(map);
     }
 
     const ferries = await loadGeoJson(
-        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry);
+        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry, null);
     if (ferries) {
         ferries.addTo(map);
     }
 
     const photos = await loadGeoJson(
-        'data/points/geotagged_photos.geojson');
+        'data/points/geotagged_photos.geojson',
+        null, // You can provide specific marker styles here if needed
+        function(feature, layer) {
+            if (feature.properties && feature.properties.filepath) {
+                const imagePath = feature.properties.filepath;
+                // Ensure the image path is correct relative to your HTML file.
+                // Example: <img src="data/geotagged_photos/2025-03-22 Kimiidera and Yuasa/converted/P3222520.jpg" ...>
+                const popupContent = `<img src="${imagePath}" alt="Photo" style="width:200px; height:200px; object-fit:cover; border-radius: 50%;">`;
+                layer.bindPopup(popupContent);
+            }
+        }
+    );
     if (photos) {
         photos.addTo(map);
     }
