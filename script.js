@@ -1,3 +1,6 @@
+import { geoJSONLayerStyles } from './geojson_styles.js';
+
+
 // Wait for the DOM to be fully loaded before running map logic
 document.addEventListener('DOMContentLoaded', async function () {
 
@@ -8,76 +11,75 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Add a tile layer (the basemap)
     // Using OpenStreetMap tiles here.
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19, // Max zoom level for the tiles
-        attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
 
     // --- Future additions will go here ---
-    function addGeoJsonTrack(trackUrl, styleOptions) { // Added styleOptions parameter
-            return fetch(trackUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(geojsonFeature => {
-                    const defaultStyle = {
-                        color: "blue", // Default color
-                        weight: 3,
-                        opacity: 0.7
-                    };
-                    const currentStyle = styleOptions || defaultStyle; // Use passed options or default
+    function loadGeoJson(trackUrl, styleOptions) { // Added styleOptions parameter
+        return fetch(trackUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(geojsonFeature => {
+                const defaultStyle = {
+                    color: "blue", // Default color
+                    weight: 3,
+                    opacity: 0.7
+                };
+                const currentStyle = styleOptions || defaultStyle; // Use passed options or default
 
-                    return L.geoJSON(geojsonFeature, {
-                        style: function (feature) {
-                            // If styleOptions is a function, call it. Otherwise, use it as an object.
-                            if (typeof currentStyle === 'function') {
-                                return currentStyle(feature);
-                            }
-                            return currentStyle;
+                return L.geoJSON(geojsonFeature, {
+                    style: function (feature) {
+                        // If styleOptions is a function, call it. Otherwise, use it as an object.
+                        if (typeof currentStyle === 'function') {
+                            return currentStyle(feature);
                         }
-                        // You can also add onEachFeature to bind popups, etc.
-                        // onEachFeature: function (feature, layer) {
-                        //    if (feature.properties && feature.properties.name) {
-                        //        layer.bindPopup(feature.properties.name);
-                        //    }
-                        // }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading or parsing GeoJSON track:', error);
-                    return null;
+                        return currentStyle;
+                    }
                 });
+            })
+            .catch(error => {
+                console.error('Error loading or parsing GeoJSON track:', error);
+                return null;
+            });
     }
 
-    // Define style for public transport
-    const publicTransportStyle = {
-        color: "green",
-        weight: 2,
-        opacity: 0.7
-    };
-    const public_transport = await addGeoJsonTrack('data/public_transport_out.geojson', publicTransportStyle);
+
+    const public_transport = await loadGeoJson(
+        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport);
     if (public_transport) {
         public_transport.addTo(map);
     }
 
-    // Define style for cycling (or use default by not passing styleOptions)
-    const cyclingStyle = {
-        color: "red",
-        weight: 2,
-        opacity: 0.8
-    };
-    const cycling = await addGeoJsonTrack('data/polyline_output.geojson', cyclingStyle);
+
+    const walking = await loadGeoJson(
+        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
+    if (walking) {
+        walking.addTo(map);
+    }
+
+    const cycling = await loadGeoJson(
+        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
     if (cycling) {
         cycling.addTo(map);
     }
 
+    const ferries = await loadGeoJson(
+        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry);
+    if (ferries) {
+        ferries.addTo(map);
+    }
 
-    // Example: Add a marker for Tokyo
-    const tokyoMarker = L.marker([35.6895, 139.6917]).addTo(map);
-    tokyoMarker.bindPopup("<b>Tokyo</b><br>Capital of Japan.");
+    const photos = await loadGeoJson(
+        'data/points/geotagged_photos.geojson');
+    if (photos) {
+        photos.addTo(map);
+    }
 
     // Example: Add a marker for Kyoto
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
