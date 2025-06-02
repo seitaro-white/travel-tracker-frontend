@@ -46,32 +46,38 @@ function onEachPhotoFeature(feature, layer) {
 
     // Mouseover event
     layer.on('mouseover', function (e) {
-        this.bringToFront(); // Bring the marker to the front
-        const iconDiv = this._icon; // Get the divIcon's wrapper element
+        const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
-            const imgElement = iconDiv.querySelector('img');
-            if (imgElement) {
-                imgElement.style.transform = 'scale(1.5)'; // Make the image 50% larger
-                imgElement.style.border = '2px solid #007bff'; // Add a blue border
-                imgElement.style.transition = 'transform 0.1s ease-in-out, border 0.1s ease-in-out'; // Smooth transition
-            }
-            // Ensure the divIcon itself allows the scaled image to be fully visible
+            // Bring the marker's icon element to the front of its parent pane
+            L.DomUtil.toFront(iconDiv);
+
+            // Apply hover styles directly to the iconDiv
+            iconDiv.style.width = "30px";
+            iconDiv.style.height = "30px";
+            iconDiv.style.border = "3px solid red"; // Test border
+            iconDiv.style.borderRadius = "50%"; // Make the div itself circular to match image
+
+            // Ensure the divIcon container allows the (now larger) image to be fully visible
+            // and that the div itself is on top.
             iconDiv.style.overflow = 'visible';
-            iconDiv.style.zIndex = 1000; // Explicitly set z-index for hover
+            iconDiv.style.zIndex = 1000; // Explicitly set CSS z-index
         }
     });
 
     // Mouseoff event
     layer.on('mouseout', function (e) {
-        const iconDiv = this._icon; // Get the divIcon's wrapper element
+        const iconDiv = this._icon;
         if (iconDiv) {
-            const imgElement = iconDiv.querySelector('img');
-            if (imgElement) {
-                imgElement.style.transform = 'scale(1)'; // Revert to original size
-                imgElement.style.border = ''; // Remove the border
-            }
+            // Revert iconDiv to its original size (from L.divIcon options)
+            iconDiv.style.width = "20px";  // Corresponds to iconSize[0]
+            iconDiv.style.height = "20px"; // Corresponds to iconSize[1]
+            iconDiv.style.border = "";      // Remove border
+            iconDiv.style.borderRadius = ""; // Remove div's border-radius
+
             iconDiv.style.zIndex = ''; // Revert z-index
-            // iconDiv.style.overflow = ''; // Revert overflow if it was changed from a default
+            // iconDiv.style.overflow = ''; // Revert overflow if needed
+            // No direct equivalent to "sendToBack" for this specific DOM manipulation,
+            // the natural stacking order will resume or other hovered items will come to front.
         }
     });
 }
@@ -80,13 +86,14 @@ function onEachPhotoFeature(feature, layer) {
 function pointToLayerForPhotos(feature, latlng) {
     if (feature.properties && feature.properties.filepath) {
         const imagePath = `assets/geotagged_photos/thumbnail/${feature.properties.filepath}`;
-        const iconHtml = `<img src="${imagePath}" alt="Photo location" style="width:20px; height:20px; border-radius:50%; object-fit:cover; display:block;">`;
+        // Ensure the img fills the iconDiv and maintains its appearance
+        const iconHtml = `<img src="${imagePath}" alt="Photo location" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;">`;
 
         const customIcon = L.divIcon({
             html: iconHtml,
             className: '', // Set to empty to avoid default Leaflet divIcon styling
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
+            iconSize: [20, 20], // This sets the initial size of the iconDiv
+            iconAnchor: [10, 10], // Anchor should be center of the iconSize
             popupAnchor: [0, -10]
         });
         return L.marker(latlng, { icon: customIcon });
