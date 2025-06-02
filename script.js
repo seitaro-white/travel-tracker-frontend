@@ -48,15 +48,13 @@ function onEachPhotoFeature(feature, layer) {
     layer.on('mouseover', function (e) {
         const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
-            // L.DomUtil.toFront(iconDiv); // Bring the marker's icon element to the front
-
             const imgElement = iconDiv.querySelector('img');
             if (imgElement) {
-                // Apply hover styles to the img element using transform and transition
-                imgElement.style.transform = 'scale(1.5)'; // Scale the image up
-                imgElement.style.border = "3px solid red"; // Add border to the image
-                imgElement.style.transition = 'transform 0.5s ease-in-out, border-color 0.5s ease-in-out, border-width 0.5s ease-in-out'; // Smooth transition
-                // Note: width and height of imgElement remain 100% of iconDiv, scale handles the visual size change.
+                // Apply hover styles to the img element
+                imgElement.style.transform = 'scale(1.5)';
+                imgElement.style.border = "3px solid red";
+                // Apply transition only when it's needed to avoid issues on initial load/first hover
+                imgElement.style.transition = 'transform 0.2s ease-in-out, border-color 0.2s ease-in-out, border-width 0.2s ease-in-out';
             }
 
             // Ensure the iconDiv container allows the (now larger) image to be fully visible
@@ -73,13 +71,14 @@ function onEachPhotoFeature(feature, layer) {
             const imgElement = iconDiv.querySelector('img');
             if (imgElement) {
                 // Revert img element to its original style
-                imgElement.style.transform = 'scale(1)'; // Revert scale
-                imgElement.style.border = ""; // Remove border from the image
-                // Transition will also apply to these changes
+                imgElement.style.transform = 'scale(1)';
+                imgElement.style.border = "";
+                // The transition applied on mouseover will also apply to these reversions.
+                // No need to re-declare transition here unless you want a different one for mouseout.
             }
 
-            iconDiv.style.zIndex = ''; // Revert z-index of the iconDiv
-            // iconDiv.style.overflow = ''; // Usually fine to leave as visible or revert if needed
+            iconDiv.style.zIndex = ''; // Revert z-index
+            iconDiv.style.overflow = 'hidden'; // Revert overflow to default, typically hidden for divIcon
         }
     });
 }
