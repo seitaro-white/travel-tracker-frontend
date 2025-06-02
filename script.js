@@ -65,49 +65,49 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
     const public_transport = await loadGeoJson(
-        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport, null, null);
+        'assets/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport, null, null);
     if (public_transport) {
         public_transport.addTo(map);
     }
 
 
     const walking = await loadGeoJson(
-        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking, null, null);
+        'assets/lines/walking_routes.geojson', geoJSONLayerStyles.walking, null, null);
     if (walking) {
         walking.addTo(map);
     }
 
     const cycling = await loadGeoJson(
-        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling, null, null);
+        'assets/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling, null, null);
     if (cycling) {
         cycling.addTo(map);
     }
 
     const ferries = await loadGeoJson(
-        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry, null, null);
+        'assets/lines/ferries.geojson', geoJSONLayerStyles.ferry, null, null);
     if (ferries) {
         ferries.addTo(map);
     }
 
     const photos = await loadGeoJson(
-        'data/points/geotagged_photos.geojson',
+        'assets/points/geotagged_photos.geojson',
         null, // styleOptions - not needed as pointToLayer creates markers
         function(feature, layer) { // onEachFeature - for popups
             if (feature.properties && feature.properties.filepath) {
-                const imagePath = feature.properties.filepath;
+                const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
                 // Ensure the image path is correct relative to your HTML file.
-                // Example: <img src="data/geotagged_photos/2025-03-22 Kimiidera and Yuasa/converted/P3222520.jpg" ...>
-                const popupContent = `<img src="${imagePath}" alt="Photo" style="width:200px; height:200px; object-fit:cover; border-radius: 50%;">`;
+                // Example: <img src="assets/geotagged_photos/2025-03-22 Kimiidera and Yuasa/converted/P3222520.jpg" ...>
+                const popupContent = `<img src="${imagePath}" alt="Photo" style="width:500px; height:500px; object-fit:cover">`;
                 layer.bindPopup(popupContent);
             }
         },
         function(feature, latlng) { // pointToLayer - for custom image markers
             if (feature.properties && feature.properties.filepath) {
-                const imagePath = feature.properties.filepath;
+                const imagePath = `assets/geotagged_photos/thumbnail/${feature.properties.filepath}`;
                 const iconHtml = `<img src="${imagePath}" alt="Photo location" style="width:20px; height:20px; border-radius:50%; object-fit:cover; display:block;">`;
 
                 const customIcon = L.divIcon({
-                    html: "<div>x</div>",
+                    html: iconHtml,
                     className: '', // Set to empty to avoid default Leaflet divIcon styling
                     iconSize: [20, 20], // Size of the icon
                     iconAnchor: [10, 10], // Point of the icon which will correspond to marker's location (center for 20x20)
