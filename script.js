@@ -10,8 +10,8 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
     return map;
 }
 
-// Function to load a GeoJSON layer and add it to the map
-async function addGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback, pointToLayerCallback) {
+// NEW function to load and add GeoJSON Point layers
+async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
     try {
         const response = await fetch(filePath);
         if (!response.ok) {
@@ -19,106 +19,110 @@ async function addGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallbac
         }
         const geojsonData = await response.json();
 
-        const featuresToProcess = geojsonData.features;
-        const nonLineFeatures = []; // To collect features not handled by L.motion
+        const layerOptions = {};
+        if (onEachFeatureCallback) {
+            layerOptions.onEachFeature = onEachFeatureCallback;
+        }
+        if (pointToLayerCallback) {
+            layerOptions.pointToLayer = pointToLayerCallback;
+        }
+        // Points don't typically use the general 'style' option in the same way lines do,
+        // styling is often handled within pointToLayer by creating custom icons.
+        L.geoJSON(geojsonData, layerOptions).addTo(map);
 
-        // Define an invisible icon
+    } catch (error) {
+        console.error('Error loading or parsing Point GeoJSON:', filePath, error);
+    }
+}
+
+// NEW function to load and add STATIC GeoJSON LineString/MultiLineString layers
+async function addStaticLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
+        }
+        const geojsonData = await response.json();
+
+        const layerOptions = {};
+        if (styleOptions) {
+            layerOptions.style = styleOptions;
+        }
+        if (onEachFeatureCallback) {
+            layerOptions.onEachFeature = onEachFeatureCallback;
+        }
+        // L.geoJSON handles LineString and MultiLineString features with the provided style.
+        L.geoJSON(geojsonData, layerOptions).addTo(map);
+
+    } catch (error) {
+        console.error('Error loading or parsing Static Line GeoJSON:', filePath, error);
+    }
+}
+
+// Function to load and add animated GeoJSON LineString/MultiLineString layers
+async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
+        }
+        const geojsonData = await response.json();
+
+        // Define an invisible icon for leaflet.motion markers
         const invisibleIcon = L.divIcon({
-            html: '', // No HTML content
-            className: 'leaflet-motion-invisible-marker', // Optional: for potential CSS targeting, but primarily for no default styling
-            iconSize: [0, 0], // Zero size
-            iconAnchor: [0, 0] // Zero anchor
+            html: '',
+            className: 'leaflet-motion-invisible-marker',
+            iconSize: [0, 0],
+            iconAnchor: [0, 0]
         });
 
-        for (const feature of featuresToProcess) {
-            const geometryType = feature.geometry ? feature.geometry.type : null;
-            const coordinates = feature.geometry ? feature.geometry.coordinates : null;
+        if (typeof L.motion === 'undefined') {
+            console.error('Leaflet.motion plugin not loaded. Cannot animate lines from:', filePath, '. Animation will not occur.');
+            // No fallback to static lines; if the plugin isn't there, animation simply won't happen.
+            return; // Exit the function if the plugin is not available.
+        }
 
-            // Check if L.motion is available
-            if (typeof L.motion === 'undefined') {
-                console.error('Leaflet.motion plugin not loaded.');
-                // Fallback to standard L.geoJSON for all features if plugin is missing
-                nonLineFeatures.push(feature);
-                continue;
-            }
+        for (const feature of geojsonData.features) {
+            // We assume features are LineString or MultiLineString as per the new function's responsibility
+            const coordinates = feature.geometry.coordinates;
+            const geometryType = feature.geometry.type;
 
-            if ((geometryType === 'LineString' || geometryType === 'MultiLineString') && coordinates) {
-                const motionLineOptions = { // These are the polyline's style options
-                    ...styleOptions // Spread the style options from your config
-                };
+            const motionLineOptions = { ...styleOptions };
+            const motionAnimationOptions = {
+                auto: true,
+                duration: 10000,
+            };
+            const markerOptions = { icon: invisibleIcon };
 
-                const motionAnimationOptions = {
-                    auto: true,      // Automatically start the animation
-                    duration: 10000, // Animation duration in milliseconds (10 seconds)
-                    // easing: L.Motion.Ease.linear // Optional: default is linear
-                };
+            const processCoordsToLatLng = (coords) => coords.map(c => [c[1], c[0]]);
 
-                // Helper to convert GeoJSON [lng, lat] to Leaflet [lat, lng]
-                const processCoordsToLatLng = (coords) => coords.map(c => [c[1], c[0]]);
-
-                const markerOptions = {
-                    icon: invisibleIcon,
-                    // showMarker: false // Keep this or remove, the custom icon should override
-                };
-
-                if (geometryType === 'LineString') {
-                    const latLngs = processCoordsToLatLng(coordinates);
-                    if (latLngs.length > 0) {
-                        const motionLayer = L.motion.polyline(
-                            latLngs,
-                            motionLineOptions,
-                            motionAnimationOptions,
-                            markerOptions // Use the markerOptions with the invisible icon
-                        ).addTo(map);
-                        if (onEachFeatureCallback) {
-                            onEachFeatureCallback(feature, motionLayer); // Apply popups or other interactions
-                        }
+            if (geometryType === 'LineString') {
+                const latLngs = processCoordsToLatLng(coordinates);
+                if (latLngs.length > 0) {
+                    const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
+                    if (onEachFeatureCallback) {
+                        onEachFeatureCallback(feature, motionLayer);
                     }
-                } else if (geometryType === 'MultiLineString') {
-                    for (const lineSegmentCoords of coordinates) {
-                        const latLngs = processCoordsToLatLng(lineSegmentCoords);
-                        if (latLngs.length > 0) {
-                            const motionLayer = L.motion.polyline(
-                                latLngs,
-                                motionLineOptions,
-                                motionAnimationOptions,
-                                markerOptions // Use the markerOptions with the invisible icon
-                            ).addTo(map);
-                            // For MultiLineString, onEachFeatureCallback applies to the whole feature.
-                            // If you need distinct behavior per segment, you might need to adjust feature data.
-                            if (onEachFeatureCallback) {
-                                onEachFeatureCallback(feature, motionLayer);
-                            }
+                }
+            } else if (geometryType === 'MultiLineString') {
+                for (const lineSegmentCoords of coordinates) {
+                    const latLngs = processCoordsToLatLng(lineSegmentCoords);
+                    if (latLngs.length > 0) {
+                        const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
+                        if (onEachFeatureCallback) {
+                            onEachFeatureCallback(feature, motionLayer);
                         }
                     }
                 }
-            } else {
-                // Collect non-line features (e.g., points for photos)
-                nonLineFeatures.push(feature);
             }
+            // If features are not LineString or MultiLineString, they will be ignored by this function,
+            // as it's specialized for animating lines.
         }
-
-        // Process non-line features (like photo points) with the standard L.geoJSON
-        if (nonLineFeatures.length > 0) {
-            const otherGeoJsonData = { type: "FeatureCollection", features: nonLineFeatures };
-            const layerProcessingOptions = {};
-            if (styleOptions && Object.keys(styleOptions).length > 0 && !pointToLayerCallback) {
-                 // Apply styleOptions only if they are general and not for points handled by pointToLayer
-                layerProcessingOptions.style = styleOptions;
-            }
-            if (onEachFeatureCallback) {
-                layerProcessingOptions.onEachFeature = onEachFeatureCallback;
-            }
-            if (pointToLayerCallback) {
-                layerProcessingOptions.pointToLayer = pointToLayerCallback;
-            }
-            L.geoJSON(otherGeoJsonData, layerProcessingOptions).addTo(map);
-        }
-
     } catch (error) {
-        console.error('Error loading or parsing GeoJSON:', filePath, error);
+        console.error('Error loading or parsing Animated Line GeoJSON:', filePath, error);
     }
 }
+
 
 // Specific callback for photo popups
 function onEachPhotoFeature(feature, layer) {
@@ -196,11 +200,14 @@ async function setupMap() {
 
     // Define layers to load
     const layersToLoad = [
-        { filePath: 'assets/lines/public_transport.geojson', style: geoJSONLayerStyles.publicTransport },
-        { filePath: 'assets/lines/walking_routes.geojson', style: geoJSONLayerStyles.walking },
-        { filePath: 'assets/lines/cycling_routes.geojson', style: geoJSONLayerStyles.cycling },
-        { filePath: 'assets/lines/ferries.geojson', style: geoJSONLayerStyles.ferry },
+        // Line Layers
+        { type: 'line', filePath: 'assets/lines/public_transport.geojson', style: geoJSONLayerStyles.publicTransport /*, onEachFeature: optionalCallbackForLines */ },
+        { type: 'line', filePath: 'assets/lines/walking_routes.geojson', style: geoJSONLayerStyles.walking },
+        { type: 'line', filePath: 'assets/lines/cycling_routes.geojson', style: geoJSONLayerStyles.cycling },
+        { type: 'line', filePath: 'assets/lines/ferries.geojson', style: geoJSONLayerStyles.ferry },
+        // Point Layer
         {
+            type: 'point',
             filePath: 'assets/points/geotagged_photos.geojson',
             onEachFeature: onEachPhotoFeature,
             pointToLayer: pointToLayerForPhotos
@@ -209,7 +216,11 @@ async function setupMap() {
 
     // Load all GeoJSON layers
     for (const layerConfig of layersToLoad) {
-        await addGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature, layerConfig.pointToLayer);
+        if (layerConfig.type === 'line') {
+            await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature);
+        } else if (layerConfig.type === 'point') {
+            await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
+        }
     }
 
     // Example: Add a marker for Kyoto
