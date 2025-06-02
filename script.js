@@ -19,18 +19,102 @@ async function addGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallbac
         }
         const geojsonData = await response.json();
 
-        const layerOptions = {};
-        if (styleOptions) {
-            layerOptions.style = styleOptions;
-        }
-        if (onEachFeatureCallback) {
-            layerOptions.onEachFeature = onEachFeatureCallback;
-        }
-        if (pointToLayerCallback) {
-            layerOptions.pointToLayer = pointToLayerCallback;
+        const featuresToProcess = geojsonData.features;
+        const nonLineFeatures = []; // To collect features not handled by L.motion
+
+        // Define an invisible icon
+        const invisibleIcon = L.divIcon({
+            html: '', // No HTML content
+            className: 'leaflet-motion-invisible-marker', // Optional: for potential CSS targeting, but primarily for no default styling
+            iconSize: [0, 0], // Zero size
+            iconAnchor: [0, 0] // Zero anchor
+        });
+
+        for (const feature of featuresToProcess) {
+            const geometryType = feature.geometry ? feature.geometry.type : null;
+            const coordinates = feature.geometry ? feature.geometry.coordinates : null;
+
+            // Check if L.motion is available
+            if (typeof L.motion === 'undefined') {
+                console.error('Leaflet.motion plugin not loaded.');
+                // Fallback to standard L.geoJSON for all features if plugin is missing
+                nonLineFeatures.push(feature);
+                continue;
+            }
+
+            if ((geometryType === 'LineString' || geometryType === 'MultiLineString') && coordinates) {
+                const motionLineOptions = { // These are the polyline's style options
+                    ...styleOptions // Spread the style options from your config
+                };
+
+                const motionAnimationOptions = {
+                    auto: true,      // Automatically start the animation
+                    duration: 10000, // Animation duration in milliseconds (10 seconds)
+                    // easing: L.Motion.Ease.linear // Optional: default is linear
+                };
+
+                // Helper to convert GeoJSON [lng, lat] to Leaflet [lat, lng]
+                const processCoordsToLatLng = (coords) => coords.map(c => [c[1], c[0]]);
+
+                const markerOptions = {
+                    icon: invisibleIcon,
+                    // showMarker: false // Keep this or remove, the custom icon should override
+                };
+
+                if (geometryType === 'LineString') {
+                    const latLngs = processCoordsToLatLng(coordinates);
+                    if (latLngs.length > 0) {
+                        const motionLayer = L.motion.polyline(
+                            latLngs,
+                            motionLineOptions,
+                            motionAnimationOptions,
+                            markerOptions // Use the markerOptions with the invisible icon
+                        ).addTo(map);
+                        if (onEachFeatureCallback) {
+                            onEachFeatureCallback(feature, motionLayer); // Apply popups or other interactions
+                        }
+                    }
+                } else if (geometryType === 'MultiLineString') {
+                    for (const lineSegmentCoords of coordinates) {
+                        const latLngs = processCoordsToLatLng(lineSegmentCoords);
+                        if (latLngs.length > 0) {
+                            const motionLayer = L.motion.polyline(
+                                latLngs,
+                                motionLineOptions,
+                                motionAnimationOptions,
+                                markerOptions // Use the markerOptions with the invisible icon
+                            ).addTo(map);
+                            // For MultiLineString, onEachFeatureCallback applies to the whole feature.
+                            // If you need distinct behavior per segment, you might need to adjust feature data.
+                            if (onEachFeatureCallback) {
+                                onEachFeatureCallback(feature, motionLayer);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Collect non-line features (e.g., points for photos)
+                nonLineFeatures.push(feature);
+            }
         }
 
-        L.geoJSON(geojsonData, layerOptions).addTo(map);
+        // Process non-line features (like photo points) with the standard L.geoJSON
+        if (nonLineFeatures.length > 0) {
+            const otherGeoJsonData = { type: "FeatureCollection", features: nonLineFeatures };
+            const layerProcessingOptions = {};
+            if (styleOptions && Object.keys(styleOptions).length > 0 && !pointToLayerCallback) {
+                 // Apply styleOptions only if they are general and not for points handled by pointToLayer
+                layerProcessingOptions.style = styleOptions;
+            }
+            if (onEachFeatureCallback) {
+                layerProcessingOptions.onEachFeature = onEachFeatureCallback;
+            }
+            if (pointToLayerCallback) {
+                layerProcessingOptions.pointToLayer = pointToLayerCallback;
+            }
+            L.geoJSON(otherGeoJsonData, layerProcessingOptions).addTo(map);
+        }
+
     } catch (error) {
         console.error('Error loading or parsing GeoJSON:', filePath, error);
     }
@@ -51,10 +135,10 @@ function onEachPhotoFeature(feature, layer) {
             const imgElement = iconDiv.querySelector('img');
             if (imgElement) {
                 // Apply hover styles to the img element
-                imgElement.style.transform = 'scale(1.5)';
-                imgElement.style.border = "3px solid red";
-                // Apply transition only when it's needed to avoid issues on initial load/first hover
-                imgElement.style.transition = 'transform 0.2s ease-in-out, border-color 0.2s ease-in-out, border-width 0.2s ease-in-out';
+                imgElement.style.transform = 'scale(1.5)'; // Adjusted scale for a less extreme jump
+                imgElement.style.border = "2px solid red";
+                // Apply transition - ensure it's consistently applied
+                imgElement.style.transition = 'transform 0.2s ease-in-out, border-color 0.2s ease-in-out, border-width 0.2s ease-in-out, border-style 0.2s ease-in-out';
             }
 
             // Ensure the iconDiv container allows the (now larger) image to be fully visible
@@ -72,13 +156,16 @@ function onEachPhotoFeature(feature, layer) {
             if (imgElement) {
                 // Revert img element to its original style
                 imgElement.style.transform = 'scale(1)';
-                imgElement.style.border = "";
-                // The transition applied on mouseover will also apply to these reversions.
-                // No need to re-declare transition here unless you want a different one for mouseout.
+                // Transition border properties for a smooth disappearance
+                imgElement.style.borderColor = 'transparent'; // Make color transparent
+                imgElement.style.borderWidth = '0px';       // Make width zero
+                // border-style will remain 'solid' from hover, but invisible with 0px width / transparent color
+                // The transition property set on mouseover will apply to these changes.
+
             }
 
-            iconDiv.style.zIndex = ''; // Revert z-index
-            iconDiv.style.overflow = 'hidden'; // Revert overflow to default, typically hidden for divIcon
+            //iconDiv.style.zIndex = ''; // Revert z-index
+            // iconDiv.style.overflow = 'hidden'; // Revert overflow to default, typically hidden for divIcon
         }
     });
 }
