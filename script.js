@@ -48,19 +48,21 @@ function onEachPhotoFeature(feature, layer) {
     layer.on('mouseover', function (e) {
         const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
-            // Bring the marker's icon element to the front of its parent pane
-            L.DomUtil.toFront(iconDiv);
+            L.DomUtil.toFront(iconDiv); // Bring the marker's icon element to the front
 
-            // Apply hover styles directly to the iconDiv
-            iconDiv.style.width = "30px";
-            iconDiv.style.height = "30px";
-            iconDiv.style.border = "3px solid red"; // Test border
-            iconDiv.style.borderRadius = "50%"; // Make the div itself circular to match image
+            const imgElement = iconDiv.querySelector('img');
+            if (imgElement) {
+                // Apply hover styles to the img element
+                imgElement.style.width = "30px";
+                imgElement.style.height = "30px";
+                imgElement.style.border = "3px solid red"; // Add border to the image
+                // The border-radius:50% is already on the img from pointToLayerForPhotos
+            }
 
-            // Ensure the divIcon container allows the (now larger) image to be fully visible
-            // and that the div itself is on top.
+            // Ensure the iconDiv container allows the (now larger) image to be fully visible
+            // and that the iconDiv itself is on top.
             iconDiv.style.overflow = 'visible';
-            iconDiv.style.zIndex = 1000; // Explicitly set CSS z-index
+            iconDiv.style.zIndex = 1000;
         }
     });
 
@@ -68,16 +70,19 @@ function onEachPhotoFeature(feature, layer) {
     layer.on('mouseout', function (e) {
         const iconDiv = this._icon;
         if (iconDiv) {
-            // Revert iconDiv to its original size (from L.divIcon options)
-            iconDiv.style.width = "20px";  // Corresponds to iconSize[0]
-            iconDiv.style.height = "20px"; // Corresponds to iconSize[1]
-            iconDiv.style.border = "";      // Remove border
-            iconDiv.style.borderRadius = ""; // Remove div's border-radius
+            const imgElement = iconDiv.querySelector('img');
+            if (imgElement) {
+                // Revert img element to its original style (100% of its container)
+                imgElement.style.width = "100%";
+                imgElement.style.height = "100%";
+                imgElement.style.border = ""; // Remove border from the image
+            }
 
-            iconDiv.style.zIndex = ''; // Revert z-index
-            // iconDiv.style.overflow = ''; // Revert overflow if needed
-            // No direct equivalent to "sendToBack" for this specific DOM manipulation,
-            // the natural stacking order will resume or other hovered items will come to front.
+            iconDiv.style.zIndex = ''; // Revert z-index of the iconDiv
+            // iconDiv.style.overflow = ''; // Or 'hidden' if that was the original default for iconDiv
+                                         // but 'visible' during hover is the key.
+                                         // Reverting might clip if not timed perfectly with image revert.
+                                         // Often, leaving it 'visible' or reverting to 'hidden' is fine.
         }
     });
 }
