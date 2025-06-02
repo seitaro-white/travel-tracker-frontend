@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }).addTo(map);
 
     // --- Future additions will go here ---
-    function loadGeoJson(trackUrl, styleOptions, onEachFeatureCallback) { // Added onEachFeatureCallback parameter
+    function loadGeoJson(trackUrl, styleOptions, onEachFeatureCallback, pointToLayerCallback) { // Added pointToLayerCallback parameter
         return fetch(trackUrl)
             // Check if the response is ok (status in the range 200-299)
             .then(response => {
@@ -50,6 +50,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                     geoJsonLayerOptions.onEachFeature = onEachFeatureCallback;
                 }
 
+                // Add in pointToLayer
+                if (pointToLayerCallback) {
+                    geoJsonLayerOptions.pointToLayer = pointToLayerCallback;
+                }
+
                 return L.geoJSON(geojsonFeature, geoJsonLayerOptions);
             })
             .catch(error => {
@@ -60,34 +65,34 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 
     const public_transport = await loadGeoJson(
-        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport, null);
+        'data/lines/public_transport.geojson', geoJSONLayerStyles.publicTransport, null, null);
     if (public_transport) {
         public_transport.addTo(map);
     }
 
 
     const walking = await loadGeoJson(
-        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking, null);
+        'data/lines/walking_routes.geojson', geoJSONLayerStyles.walking, null, null);
     if (walking) {
         walking.addTo(map);
     }
 
     const cycling = await loadGeoJson(
-        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling, null);
+        'data/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling, null, null);
     if (cycling) {
         cycling.addTo(map);
     }
 
     const ferries = await loadGeoJson(
-        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry, null);
+        'data/lines/ferries.geojson', geoJSONLayerStyles.ferry, null, null);
     if (ferries) {
         ferries.addTo(map);
     }
 
     const photos = await loadGeoJson(
         'data/points/geotagged_photos.geojson',
-        null, // You can provide specific marker styles here if needed
-        function(feature, layer) {
+        null, // styleOptions - not needed as pointToLayer creates markers
+        function(feature, layer) { // onEachFeature - for popups
             if (feature.properties && feature.properties.filepath) {
                 const imagePath = feature.properties.filepath;
                 // Ensure the image path is correct relative to your HTML file.
@@ -95,6 +100,23 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const popupContent = `<img src="${imagePath}" alt="Photo" style="width:200px; height:200px; object-fit:cover; border-radius: 50%;">`;
                 layer.bindPopup(popupContent);
             }
+        },
+        function(feature, latlng) { // pointToLayer - for custom image markers
+            if (feature.properties && feature.properties.filepath) {
+                const imagePath = feature.properties.filepath;
+                const iconHtml = `<img src="${imagePath}" alt="Photo location" style="width:20px; height:20px; border-radius:50%; object-fit:cover; display:block;">`;
+
+                const customIcon = L.divIcon({
+                    html: "<div>x</div>",
+                    className: '', // Set to empty to avoid default Leaflet divIcon styling
+                    iconSize: [20, 20], // Size of the icon
+                    iconAnchor: [10, 10], // Point of the icon which will correspond to marker's location (center for 20x20)
+                    popupAnchor: [0, -10] // Point from which the popup should open relative to the iconAnchor (centered above the icon)
+                });
+                return L.marker(latlng, { icon: customIcon });
+            }
+            // Fallback to default marker if no filepath is found
+            return L.marker(latlng);
         }
     );
     if (photos) {
