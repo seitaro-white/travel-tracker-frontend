@@ -43,6 +43,37 @@ function onEachPhotoFeature(feature, layer) {
         const popupContent = `<img src="${imagePath}" alt="Photo" style="width:500px; height:500px; object-fit:cover">`;
         layer.bindPopup(popupContent, { maxWidth: 500 });
     }
+
+    // Mouseover event
+    layer.on('mouseover', function (e) {
+        this.bringToFront(); // Bring the marker to the front
+        const iconDiv = this._icon; // Get the divIcon's wrapper element
+        if (iconDiv) {
+            const imgElement = iconDiv.querySelector('img');
+            if (imgElement) {
+                imgElement.style.transform = 'scale(1.5)'; // Make the image 50% larger
+                imgElement.style.border = '2px solid #007bff'; // Add a blue border
+                imgElement.style.transition = 'transform 0.1s ease-in-out, border 0.1s ease-in-out'; // Smooth transition
+            }
+            // Ensure the divIcon itself allows the scaled image to be fully visible
+            iconDiv.style.overflow = 'visible';
+            iconDiv.style.zIndex = 1000; // Explicitly set z-index for hover
+        }
+    });
+
+    // Mouseoff event
+    layer.on('mouseout', function (e) {
+        const iconDiv = this._icon; // Get the divIcon's wrapper element
+        if (iconDiv) {
+            const imgElement = iconDiv.querySelector('img');
+            if (imgElement) {
+                imgElement.style.transform = 'scale(1)'; // Revert to original size
+                imgElement.style.border = ''; // Remove the border
+            }
+            iconDiv.style.zIndex = ''; // Revert z-index
+            // iconDiv.style.overflow = ''; // Revert overflow if it was changed from a default
+        }
+    });
 }
 
 // Specific callback for photo markers
