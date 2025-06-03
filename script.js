@@ -1,5 +1,5 @@
 import { geoJSONLayerStyles } from './geojson_styles.js';
-import { addAnimatedLineGeoJsonLayer, addPointGeoJsonLayer } from '/src/services/geojson.js';
+import { addAnimatedLineGeoJsonLayer, addPointGeoJsonLayer, addStaticLineGeoJsonLayer } from '/src/services/geojson.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
@@ -137,6 +137,10 @@ async function setupMap() {
     // For example:
     // await addAnimatedLineGeoJsonLayer(map, 'path/to/other_animated_lines.geojson', someStyle, someCallback, undefined);
 
+    // Add static walking routes
+    await addStaticLineGeoJsonLayer(map, 'assets/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
+    await addStaticLineGeoJsonLayer(map, 'assets/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
+    await addStaticLineGeoJsonLayer(map, 'assets/lines/ferries.geojson', geoJSONLayerStyles.ferry);
 
     // Load all point layers after all line animations are initiated
     for (const layerConfig of pointLayersConfig) {
