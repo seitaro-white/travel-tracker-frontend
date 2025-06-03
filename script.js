@@ -93,10 +93,7 @@ async function setupMap() {
     // Define layers to load
     const layersToLoad = [
         // Line Layers
-        { type: 'line', filePath: 'assets/lines/public_transport.geojson', style: geoJSONLayerStyles.publicTransport /*, onEachFeature: optionalCallbackForLines */ },
-        { type: 'line', filePath: 'assets/lines/walking_routes.geojson', style: geoJSONLayerStyles.walking },
-        { type: 'line', filePath: 'assets/lines/cycling_routes.geojson', style: geoJSONLayerStyles.cycling },
-        { type: 'line', filePath: 'assets/lines/ferries.geojson', style: geoJSONLayerStyles.ferry },
+        { type: 'line', filePath: 'assets/lines/animation_tracks.geojson', style: geoJSONLayerStyles.publicTransport /*, onEachFeature: optionalCallbackForLines */ },
         // Point Layer
         {
             type: 'point',
