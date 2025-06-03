@@ -77,7 +77,7 @@ export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, o
             const motionLineOptions = { ...styleOptions };
             const motionAnimationOptions = {
                 auto: true,
-                speed: 800000,
+                duration: 2000,
             };
             const markerOptions = { icon: invisibleIcon };
 
