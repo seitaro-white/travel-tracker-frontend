@@ -153,3 +153,42 @@ h1 {
   transform: scale(1.05) rotate(1deg); /* Slight grow and straighten on hover */
   box-shadow: 5px 5px 12px rgba(0, 0, 0, 0.3);
 }
+
+/* New styles for the animated polaroid */
+.polaroid-animated-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Start items at the bottom, will transition to center */
+    z-index: 2000; /* Ensure it's above other content */
+    pointer-events: none; /* Wrapper doesn't catch clicks initially */
+    opacity: 0; /* Start fully transparent */
+    background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent backdrop */
+    transition: opacity 0.3s ease-in-out, align-items 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.polaroid-animated-wrapper.visible {
+    opacity: 1;
+    pointer-events: auto; /* Wrapper catches clicks when visible (e.g., to close) */
+    align-items: center; /* Animate to center */
+}
+
+/* The .polaroid inside the wrapper */
+.polaroid-animated-wrapper .polaroid {
+    /* .polaroid already has width, max-width, background, padding, etc. from existing styles */
+    margin: 0; /* Override existing margin for flex centering */
+    transform: translateY(100%); /* Start below its final position in the flex container */
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.4s ease-out 0.1s;
+    /* cubic-bezier for a slight overshoot effect, opacity delay to sync with wrapper */
+    pointer-events: auto; /* Polaroid itself should always be interactive */
+}
+
+.polaroid-animated-wrapper.visible .polaroid {
+    transform: translateY(0); /* Animate to its natural position within the centered flex container */
+    opacity: 1;
+}
