@@ -70,7 +70,7 @@ function pointToLayerForPhotos(feature, latlng) {
     if (feature.properties && feature.properties.filepath) {
         const imagePath = `assets/geotagged_photos/thumbnail/${feature.properties.filepath}`;
         // Ensure the img fills the iconDiv and maintains its appearance
-        const iconHtml = `<img src="${imagePath}" alt="Photo location" style="width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;">`;
+        const iconHtml = `<img src="${imagePath}" alt="Photo location" class="photo-marker-image">`;
 
         const customIcon = L.divIcon({
             html: iconHtml,
