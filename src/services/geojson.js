@@ -2,24 +2,26 @@
 async function fetchGeoJson(filePath) {
     const response = await fetch(filePath);
     if (!response.ok) {
-        console.error(`Network response was not ok for ${filePath}: ${response.statusText}`);
-        return null;
+        throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
     }
-    return await response.json();
+    try {
+        return await response.json();
+    } catch (e) {
+        throw new Error(`Failed to parse JSON from ${filePath}: ${e.message}`);
+    }
 }
 
 
 // Function to filter GeoJSON features
 function filterGeoJsonFeatures(geojsonData, animationOrderFilter) {
-    if (!geojsonData || !geojsonData.features) {
-        return [];
-    }
+
     if (typeof animationOrderFilter !== 'undefined' && animationOrderFilter !== null) {
         return geojsonData.features.filter(feature =>
+
             feature.properties && feature.properties.AnimationOrder === animationOrderFilter
         );
     }
-    return geojsonData.features; // Return all features if no filter is applied
+    return geojsonData.features;
 }
 
 // Function to animate a set of GeoJSON features
@@ -74,29 +76,22 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback) {
 // Refactored function to load and add animated GeoJSON LineString/MultiLineString layers
 export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback, animationOrderFilter) {
     try {
-        const geojsonData = await fetchGeoJson(filePath);
-        if (!geojsonData) {
-            return; // Error already logged by fetchGeoJson
-        }
+        const geojsonData = await fetchGeoJson(filePath); // Now throws on error
 
         const featuresToAnimate = filterGeoJsonFeatures(geojsonData, animationOrderFilter);
-
         animateFeatures(map, featuresToAnimate, styleOptions, onEachFeatureCallback);
 
     } catch (error) {
-        // Catch any unexpected errors during the orchestration
-        console.error('Error orchestrating animated line GeoJSON loading:', filePath, error);
+        console.error(`Critical error loading/processing GeoJSON from ${filePath}:`, error);
+        throw error;
+
     }
 }
 
-
+// NEW function to load and add STATIC GeoJSON Point layers
 export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
     try {
         const geojsonData = await fetchGeoJson(filePath);
-        if (!geojsonData) {
-            // Error is already logged by fetchGeoJson
-            return;
-        }
 
         const layerOptions = {};
         if (onEachFeatureCallback) {
@@ -117,10 +112,6 @@ export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback,
 export async function addStaticLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
     try {
         const geojsonData = await fetchGeoJson(filePath);
-        if (!geojsonData) {
-            // Error is already logged by fetchGeoJson
-            return;
-        }
 
         const layerOptions = {};
         if (styleOptions) {
