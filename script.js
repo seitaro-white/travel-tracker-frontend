@@ -7,9 +7,10 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
         mapId, {
 
     }).setView(centerCoordinates, zoomLevel);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19,
+    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.{ext}', {
+        maxZoom: 20,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        ext: 'png',
     }).addTo(map);
     return map;
 }
@@ -18,20 +19,23 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
 // Specific callback for photo popups
 function onEachPhotoFeature(feature, layer) {
     if (feature.properties && feature.properties.filepath) {
-        const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
-        // Use filepath as a placeholder for caption, or use another property if available
-        const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
+        // const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
+        // const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
 
-        const popupContent = `
-            <div class="polaroid">
-                <img src="${imagePath}" alt="Photo">
-                <p class="caption">${captionText}</p>
-            </div>`;
-        // Adjust maxWidth to accommodate the .polaroid's CSS max-width (e.g., 450px + buffer)
-        layer.bindPopup(popupContent, { maxWidth: 500 });
+        // const popupContent = `
+        //     <div class="polaroid">
+        //         <img src="${imagePath}" alt="Photo">
+        //         <p class="caption">${captionText}</p>
+        //     </div>`;
+        // layer.bindPopup(popupContent, { maxWidth: 500 }); // REMOVE THIS LINE
+
+        // NEW: Add click listener to show animated polaroid
+        layer.on('click', function () {
+            showAnimatedPolaroid(feature);
+        });
     }
 
-    // Mouseover event
+    // Mouseover event (keep existing for marker icon hover effect)
     layer.on('mouseover', function (e) {
         const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
@@ -48,7 +52,7 @@ function onEachPhotoFeature(feature, layer) {
         }
     });
 
-    // Mouseout event
+    // Mouseout event (keep existing for marker icon hover effect)
     layer.on('mouseout', function (e) {
         const iconDiv = this._icon;
         if (iconDiv) {
@@ -83,6 +87,72 @@ function pointToLayerForPhotos(feature, latlng) {
     return L.marker(latlng); // Fallback to default marker
 }
 
+
+// NEW FUNCTIONS for animated polaroid
+
+function hideAnimatedPolaroidOnClick() {
+    const wrapper = document.querySelector('.polaroid-animated-wrapper');
+    if (wrapper && wrapper.classList.contains('visible')) {
+        wrapper.classList.remove('visible');
+
+        // Listen for the end of the opacity transition on the wrapper to remove it from DOM
+        const onTransitionEnd = (event) => {
+            if (event.target === wrapper && event.propertyName === 'opacity') {
+                if (wrapper.parentElement) { // Check again before removing
+                    wrapper.remove();
+                }
+            }
+        };
+        wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
+    }
+}
+
+function showAnimatedPolaroid(feature) {
+    // If an old wrapper exists, remove it immediately to prevent overlap or issues.
+    const existingWrapper = document.querySelector('.polaroid-animated-wrapper');
+    if (existingWrapper) {
+        existingWrapper.remove();
+    }
+
+    const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
+    const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
+
+    // Create wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'polaroid-animated-wrapper';
+    wrapper.onclick = function(event) { // Click on backdrop to close
+        if (event.target === wrapper) { // Only if click is on wrapper itself
+            hideAnimatedPolaroidOnClick();
+        }
+    };
+
+    // Create polaroid element
+    const polaroidElement = document.createElement('div');
+    polaroidElement.className = 'polaroid'; // Use existing .polaroid styles
+
+    polaroidElement.innerHTML = `
+        <img src="${imagePath}" alt="Photo">
+        <p class="caption">${captionText}</p>
+    `;
+
+    // Prevent clicks on the polaroid itself from closing it via the wrapper's click listener
+    polaroidElement.onclick = function(event) {
+        event.stopPropagation();
+    };
+
+    wrapper.appendChild(polaroidElement);
+    document.body.appendChild(wrapper);
+
+    // Trigger the animation by adding 'visible' class to wrapper.
+    // Using requestAnimationFrame ensures the element is in the DOM and initial styles are applied
+    // before the class change, allowing the CSS transition to occur.
+    requestAnimationFrame(() => {
+        // A second rAF can help ensure the transition triggers reliably in all browsers
+        requestAnimationFrame(() => {
+            wrapper.classList.add('visible');
+        });
+    });
+}
 
 // Main function to set up the map and layers
 async function setupMap() {
