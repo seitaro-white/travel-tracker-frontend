@@ -74,12 +74,25 @@ function pointToLayerForPhotos(feature, latlng) {
 
         const customIcon = L.divIcon({
             html: iconHtml,
-            className: '', // Set to empty to avoid default Leaflet divIcon styling
+            className: 'photo-marker-icon', // Apply the CSS class
             iconSize: [20, 20], // This sets the initial size of the iconDiv
             iconAnchor: [10, 10], // Anchor should be center of the iconSize
             popupAnchor: [0, -10]
         });
-        return L.marker(latlng, { icon: customIcon });
+        const marker = L.marker(latlng, { icon: customIcon });
+
+        marker.on('add', function () {
+            if (this._icon) {
+                this._icon.style.transform = 'scale(0)';
+                requestAnimationFrame(() => {
+                    if (this._icon) {
+                        this._icon.style.transform = 'scale(1)';
+                    }
+                });
+            }
+        });
+
+        return marker;
     }
     return L.marker(latlng); // Fallback to default marker
 }
@@ -108,7 +121,6 @@ async function setupMap() {
         // Add other point layer configurations here if needed
     ];
 
-    const animationDelay = 2000; // Delay between starting each animation chunk
 
     // Handle sequenced animation for the main animated_tracks.geojson
     if (animatedLineLayerConfig.filePath === 'assets/lines/animation_tracks.geojson') {
@@ -139,12 +151,14 @@ async function setupMap() {
     // await addAnimatedLineGeoJsonLayer(map, 'path/to/other_animated_lines.geojson', someStyle, someCallback, undefined);
 
 
+
     // Load all point layers after all line animations are initiated
     for (const layerConfig of pointLayersConfig) {
         if (layerConfig.type === 'point') {
             await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
         }
     }
+
 
     // Example: Add a marker for Kyoto
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);

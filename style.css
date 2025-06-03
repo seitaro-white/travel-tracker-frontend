@@ -20,3 +20,8 @@ h1 {
     border: 2px solid #aaa;
     box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: a subtle shadow */
 }
+
+.photo-marker-icon {
+    transition: transform 0.4s ease-out;
+    transform-origin: center center;
+}
