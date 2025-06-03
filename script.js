@@ -15,7 +15,6 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
 }
 
 
-
 // Specific callback for photo popups
 function onEachPhotoFeature(feature, layer) {
     if (feature.properties && feature.properties.filepath) {
@@ -116,23 +115,23 @@ async function setupMap() {
         // Call each animation order sequentially with a delay
 
         // AnimationOrder 1.0
-        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 1.0);
-        await new Promise(resolve => setTimeout(resolve, animationDelay));
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 1.0, 500); // Example: 3000ms duration
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // AnimationOrder 2.0
-        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 2.0);
-        await new Promise(resolve => setTimeout(resolve, animationDelay));
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 2.0, 1000); // Example: 2500ms duration
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // AnimationOrder 3.0
-        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 3.0);
-        await new Promise(resolve => setTimeout(resolve, animationDelay));
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 3.0, 1000); // Example: 2000ms duration
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // AnimationOrder 4.0
-        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 4.0);
-        await new Promise(resolve => setTimeout(resolve, animationDelay));
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 4.0, 2000); // Example: 3500ms duration
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         // AnimationOrder 5.0
-        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 5.0);
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 5.0, 1000); // Example: 4000ms duration
         // No delay needed after the last animation order
     }
     // Add other animated line layers here if you have any that are not part of the sequence

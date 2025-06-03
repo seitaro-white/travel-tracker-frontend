@@ -25,7 +25,7 @@ function filterGeoJsonFeatures(geojsonData, animationOrderFilter) {
 }
 
 // Function to animate a set of GeoJSON features
-function animateFeatures(map, features, styleOptions, onEachFeatureCallback) {
+function animateFeatures(map, features, styleOptions, onEachFeatureCallback, duration = 2000) { // Added duration parameter with default
     if (typeof L.motion === 'undefined') {
         console.error('Leaflet.motion plugin not loaded. Cannot animate lines. Animation will not occur.');
         return;
@@ -47,7 +47,7 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback) {
         const motionLineOptions = { ...styleOptions };
         const motionAnimationOptions = {
             auto: true,
-            duration: 2000, // This duration is for each individual line segment animation
+            duration: duration, // Use the passed duration
         };
         const markerOptions = { icon: invisibleIcon };
 
@@ -74,12 +74,12 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback) {
 }
 
 // Refactored function to load and add animated GeoJSON LineString/MultiLineString layers
-export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback, animationOrderFilter) {
+export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback, animationOrderFilter, duration) { // Added duration parameter
     try {
         const geojsonData = await fetchGeoJson(filePath); // Now throws on error
 
         const featuresToAnimate = filterGeoJsonFeatures(geojsonData, animationOrderFilter);
-        animateFeatures(map, featuresToAnimate, styleOptions, onEachFeatureCallback);
+        animateFeatures(map, featuresToAnimate, styleOptions, onEachFeatureCallback, duration); // Pass duration
 
     } catch (error) {
         console.error(`Critical error loading/processing GeoJSON from ${filePath}:`, error);
