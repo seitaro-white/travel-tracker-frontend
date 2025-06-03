@@ -103,10 +103,26 @@ async function setupMap() {
         }
     ];
 
+    const animatedLineFilePath = 'assets/lines/animation_tracks.geojson';
+    const animationDelay = 2000; // 5 seconds delay between starting each animation chunk
+
     // Load all GeoJSON layers
     for (const layerConfig of layersToLoad) {
         if (layerConfig.type === 'line') {
-            await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature);
+            if (layerConfig.filePath === animatedLineFilePath) {
+                // Handle sequenced animation for animation_tracks.geojson
+                const animationOrders = [1.0, 2.0, 3.0, 4.0]; // AnimationOrder values from your GeoJSON
+                for (let i = 0; i < animationOrders.length; i++) {
+                    const order = animationOrders[i];
+                    await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature, order);
+                    if (i < animationOrders.length - 1) { // Don't wait after the last animation order
+                        await new Promise(resolve => setTimeout(resolve, animationDelay));
+                    }
+                }
+            } else {
+                // Load other line layers normally (if any)
+                await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature, undefined);
+            }
         } else if (layerConfig.type === 'point') {
             await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
         }

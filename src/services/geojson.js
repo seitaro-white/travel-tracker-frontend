@@ -47,7 +47,7 @@ export async function addStaticLineGeoJsonLayer(map, filePath, styleOptions, onE
 }
 
 // Function to load and add animated GeoJSON LineString/MultiLineString layers
-export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
+export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback, animationOrderFilter) {
     try {
         const response = await fetch(filePath);
         if (!response.ok) {
@@ -69,7 +69,14 @@ export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, o
             return; // Exit the function if the plugin is not available.
         }
 
-        for (const feature of geojsonData.features) {
+        let featuresToAnimate = geojsonData.features;
+        if (typeof animationOrderFilter !== 'undefined' && animationOrderFilter !== null) {
+            featuresToAnimate = geojsonData.features.filter(feature =>
+                feature.properties && feature.properties.AnimationOrder === animationOrderFilter
+            );
+        }
+
+        for (const feature of featuresToAnimate) {
             // We assume features are LineString or MultiLineString as per the new function's responsibility
             const coordinates = feature.geometry.coordinates;
             const geometryType = feature.geometry.type;
