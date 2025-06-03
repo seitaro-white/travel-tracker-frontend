@@ -1,127 +1,19 @@
 import { geoJSONLayerStyles } from './geojson_styles.js';
+import { addAnimatedLineGeoJsonLayer, addPointGeoJsonLayer } from '/src/services/geojson.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
-    const map = L.map(mapId).setView(centerCoordinates, zoomLevel);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    const map = L.map(
+        mapId, {
+
+    }).setView(centerCoordinates, zoomLevel);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     return map;
 }
 
-// NEW function to load and add GeoJSON Point layers
-async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
-        }
-        const geojsonData = await response.json();
-
-        const layerOptions = {};
-        if (onEachFeatureCallback) {
-            layerOptions.onEachFeature = onEachFeatureCallback;
-        }
-        if (pointToLayerCallback) {
-            layerOptions.pointToLayer = pointToLayerCallback;
-        }
-        // Points don't typically use the general 'style' option in the same way lines do,
-        // styling is often handled within pointToLayer by creating custom icons.
-        L.geoJSON(geojsonData, layerOptions).addTo(map);
-
-    } catch (error) {
-        console.error('Error loading or parsing Point GeoJSON:', filePath, error);
-    }
-}
-
-// NEW function to load and add STATIC GeoJSON LineString/MultiLineString layers
-async function addStaticLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
-        }
-        const geojsonData = await response.json();
-
-        const layerOptions = {};
-        if (styleOptions) {
-            layerOptions.style = styleOptions;
-        }
-        if (onEachFeatureCallback) {
-            layerOptions.onEachFeature = onEachFeatureCallback;
-        }
-        // L.geoJSON handles LineString and MultiLineString features with the provided style.
-        L.geoJSON(geojsonData, layerOptions).addTo(map);
-
-    } catch (error) {
-        console.error('Error loading or parsing Static Line GeoJSON:', filePath, error);
-    }
-}
-
-// Function to load and add animated GeoJSON LineString/MultiLineString layers
-async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, onEachFeatureCallback) {
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);
-        }
-        const geojsonData = await response.json();
-
-        // Define an invisible icon for leaflet.motion markers
-        const invisibleIcon = L.divIcon({
-            html: '',
-            className: 'leaflet-motion-invisible-marker',
-            iconSize: [0, 0],
-            iconAnchor: [0, 0]
-        });
-
-        if (typeof L.motion === 'undefined') {
-            console.error('Leaflet.motion plugin not loaded. Cannot animate lines from:', filePath, '. Animation will not occur.');
-            // No fallback to static lines; if the plugin isn't there, animation simply won't happen.
-            return; // Exit the function if the plugin is not available.
-        }
-
-        for (const feature of geojsonData.features) {
-            // We assume features are LineString or MultiLineString as per the new function's responsibility
-            const coordinates = feature.geometry.coordinates;
-            const geometryType = feature.geometry.type;
-
-            const motionLineOptions = { ...styleOptions };
-            const motionAnimationOptions = {
-                auto: true,
-                duration: 10000,
-            };
-            const markerOptions = { icon: invisibleIcon };
-
-            const processCoordsToLatLng = (coords) => coords.map(c => [c[1], c[0]]);
-
-            if (geometryType === 'LineString') {
-                const latLngs = processCoordsToLatLng(coordinates);
-                if (latLngs.length > 0) {
-                    const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
-                    if (onEachFeatureCallback) {
-                        onEachFeatureCallback(feature, motionLayer);
-                    }
-                }
-            } else if (geometryType === 'MultiLineString') {
-                for (const lineSegmentCoords of coordinates) {
-                    const latLngs = processCoordsToLatLng(lineSegmentCoords);
-                    if (latLngs.length > 0) {
-                        const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
-                        if (onEachFeatureCallback) {
-                            onEachFeatureCallback(feature, motionLayer);
-                        }
-                    }
-                }
-            }
-            // If features are not LineString or MultiLineString, they will be ignored by this function,
-            // as it's specialized for animating lines.
-        }
-    } catch (error) {
-        console.error('Error loading or parsing Animated Line GeoJSON:', filePath, error);
-    }
-}
 
 
 // Specific callback for photo popups
@@ -196,7 +88,7 @@ function pointToLayerForPhotos(feature, latlng) {
 
 // Main function to set up the map and layers
 async function setupMap() {
-    const map = initializeMap('map', [36.2048, 138.2529], 5.7);
+    const map = initializeMap('map', [36.2048, 138.2529], 7);
 
     // Define layers to load
     const layersToLoad = [
