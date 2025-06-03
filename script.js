@@ -19,8 +19,15 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
 function onEachPhotoFeature(feature, layer) {
     if (feature.properties && feature.properties.filepath) {
         const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
-        const popupContent = `<img src="${imagePath}" alt="Photo" style="width:500px; height:500px; object-fit:cover">`;
-        layer.bindPopup(popupContent, { maxWidth: 500 });
+        // Use filepath as a placeholder for caption, or use another property if available
+        const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
+
+        const popupContent = `
+            <div class="polaroid">
+                <img src="${imagePath}" alt="Photo">
+                <p class="caption">${captionText}</p>
+            </div>`;
+        layer.bindPopup(popupContent, { maxWidth: 500 }); // maxWidth for the popup bubble itself
     }
 
     // Mouseover event

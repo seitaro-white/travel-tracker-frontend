@@ -77,3 +77,52 @@ h1 {
     transform: scale(3);
     border: 2px solid whitesmoke; /* Hover state border */
 }
+
+/* --- Google Font Import (add to <head> or CSS import) --- */
+/* @import url('https://fonts.googleapis.com/css2?family=Caveat&display=swap'); */
+/* Or add to HTML head:
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
+*/
+
+.polaroid {
+  background-color: #fff; /* The "paper" color of the Polaroid */
+  border: 1px solid #E0E0E0; /* A very light grey border for the paper edge */
+  display: inline-block; /* Allows multiple Polaroids to sit side-by-side and respects padding */
+  margin: 15px; /* Spacing around the Polaroid */
+
+  /* The key: Padding creates the border. Top, Right, Bottom (thicker), Left */
+  padding: 10px 10px 45px 10px;
+
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.25); /* Drop shadow for depth */
+  transition: transform 0.2s ease-in-out; /* For hover effects */
+
+  /* For the image inside */
+  width: 200px; /* Set a width for the entire Polaroid frame */
+}
+
+.polaroid img {
+  display: block; /* Removes any extra space below the image if it's inline */
+  width: 100%;   /* Makes the image fill the available space *within* the padding */
+  height: auto;  /* Maintains aspect ratio */
+}
+
+.polaroid .caption {
+  text-align: center;
+  font-size: 0.9em;
+  color: #333;
+  margin-top: 10px; /* Space between image and caption */
+  font-family: 'Caveat', cursive; /* A nice handwritten-style font. Import it via Google Fonts or similar */
+  word-wrap: break-word; /* Ensure long filenames wrap */
+}
+
+/* Optional: Add a slight rotation */
+.polaroid.rotated {
+  transform: rotate(-3deg);
+}
+
+.polaroid:hover {
+  transform: scale(1.05) rotate(1deg); /* Slight grow and straighten on hover */
+  box-shadow: 5px 5px 12px rgba(0, 0, 0, 0.3);
+}
