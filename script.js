@@ -90,40 +90,59 @@ function pointToLayerForPhotos(feature, latlng) {
 async function setupMap() {
     const map = initializeMap('map', [36.2048, 138.2529], 7);
 
-    // Define layers to load
-    const layersToLoad = [
-        // Line Layers
-        { type: 'line', filePath: 'assets/lines/animation_tracks.geojson', style: geoJSONLayerStyles.publicTransport /*, onEachFeature: optionalCallbackForLines */ },
-        // Point Layer
+    // Configuration for the animated line layer
+    const animatedLineLayerConfig = {
+        type: 'line',
+        filePath: 'assets/lines/animation_tracks.geojson',
+        style: geoJSONLayerStyles.publicTransport,
+        // onEachFeature: optionalCallbackForLines // Uncomment if you have one
+    };
+
+    // Configuration for point layers
+    const pointLayersConfig = [
         {
             type: 'point',
             filePath: 'assets/points/geotagged_photos.geojson',
             onEachFeature: onEachPhotoFeature,
             pointToLayer: pointToLayerForPhotos
         }
+        // Add other point layer configurations here if needed
     ];
 
-    const animatedLineFilePath = 'assets/lines/animation_tracks.geojson';
-    const animationDelay = 2000; // 5 seconds delay between starting each animation chunk
+    const animationDelay = 2000; // Delay between starting each animation chunk
 
-    // Load all GeoJSON layers
-    for (const layerConfig of layersToLoad) {
-        if (layerConfig.type === 'line') {
-            if (layerConfig.filePath === animatedLineFilePath) {
-                // Handle sequenced animation for animation_tracks.geojson
-                const animationOrders = [1.0, 2.0, 3.0, 4.0]; // AnimationOrder values from your GeoJSON
-                for (let i = 0; i < animationOrders.length; i++) {
-                    const order = animationOrders[i];
-                    await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature, order);
-                    if (i < animationOrders.length - 1) { // Don't wait after the last animation order
-                        await new Promise(resolve => setTimeout(resolve, animationDelay));
-                    }
-                }
-            } else {
-                // Load other line layers normally (if any)
-                await addAnimatedLineGeoJsonLayer(map, layerConfig.filePath, layerConfig.style, layerConfig.onEachFeature, undefined);
-            }
-        } else if (layerConfig.type === 'point') {
+    // Handle sequenced animation for the main animated_tracks.geojson
+    if (animatedLineLayerConfig.filePath === 'assets/lines/animation_tracks.geojson') {
+        // Call each animation order sequentially with a delay
+
+        // AnimationOrder 1.0
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 1.0);
+        await new Promise(resolve => setTimeout(resolve, animationDelay));
+
+        // AnimationOrder 2.0
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 2.0);
+        await new Promise(resolve => setTimeout(resolve, animationDelay));
+
+        // AnimationOrder 3.0
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 3.0);
+        await new Promise(resolve => setTimeout(resolve, animationDelay));
+
+        // AnimationOrder 4.0
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 4.0);
+        await new Promise(resolve => setTimeout(resolve, animationDelay));
+
+        // AnimationOrder 5.0
+        await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 5.0);
+        // No delay needed after the last animation order
+    }
+    // Add other animated line layers here if you have any that are not part of the sequence
+    // For example:
+    // await addAnimatedLineGeoJsonLayer(map, 'path/to/other_animated_lines.geojson', someStyle, someCallback, undefined);
+
+
+    // Load all point layers after all line animations are initiated
+    for (const layerConfig of pointLayersConfig) {
+        if (layerConfig.type === 'point') {
             await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
         }
     }
