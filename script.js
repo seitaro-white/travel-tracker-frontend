@@ -27,13 +27,10 @@ function onEachPhotoFeature(feature, layer) {
     layer.on('mouseover', function (e) {
         const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
-            const imgElement = iconDiv.querySelector('img');
+            const imgElement = iconDiv.querySelector('img.photo-marker-image');
             if (imgElement) {
-                // Apply hover styles to the img element
-                imgElement.style.transform = 'scale(1.5)'; // Adjusted scale for a less extreme jump
-                imgElement.style.border = "2px solid red";
-                // Apply transition - ensure it's consistently applied
-                imgElement.style.transition = 'transform 0.2s ease-in-out, border-color 0.2s ease-in-out, border-width 0.2s ease-in-out, border-style 0.2s ease-in-out';
+                // Apply hover styles by adding a class
+                imgElement.classList.add('photo-marker-image-hover');
             }
 
             // Ensure the iconDiv container allows the (now larger) image to be fully visible
@@ -43,24 +40,18 @@ function onEachPhotoFeature(feature, layer) {
         }
     });
 
-    // Mouseoff event
+    // Mouseout event
     layer.on('mouseout', function (e) {
         const iconDiv = this._icon;
         if (iconDiv) {
-            const imgElement = iconDiv.querySelector('img');
+            const imgElement = iconDiv.querySelector('img.photo-marker-image');
             if (imgElement) {
-                // Revert img element to its original style
-                imgElement.style.transform = 'scale(1)';
-                // Transition border properties for a smooth disappearance
-                imgElement.style.borderColor = 'transparent'; // Make color transparent
-                imgElement.style.borderWidth = '0px';       // Make width zero
-                // border-style will remain 'solid' from hover, but invisible with 0px width / transparent color
-                // The transition property set on mouseover will apply to these changes.
-
+                // Revert to original styles by removing the class
+                imgElement.classList.remove('photo-marker-image-hover');
             }
 
-            //iconDiv.style.zIndex = ''; // Revert z-index
-            // iconDiv.style.overflow = 'hidden'; // Revert overflow to default, typically hidden for divIcon
+            //iconDiv.style.zIndex = ''; // Revert z-index if needed
+            // iconDiv.style.overflow = 'hidden'; // Revert overflow if needed
         }
     });
 }

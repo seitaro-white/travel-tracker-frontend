@@ -66,6 +66,14 @@ h1 {
     border-radius: 50%;
     object-fit: cover;
     display: block;
-    border: 1.5px solid whitesmoke; /* Added thin light grey border */
-    box-shadow: 2px 2px 3px rgba(0,0,0,0.2); /* Added a bit of shadow */
+    border: 1.5px solid whitesmoke; /* Default border */
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+    transform: scale(1); /* Default scale */
+    /* Apply transition to transform and border properties */
+    transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
+}
+
+.photo-marker-image-hover {
+    transform: scale(3);
+    border: 2px solid whitesmoke; /* Hover state border */
 }
