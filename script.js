@@ -27,7 +27,8 @@ function onEachPhotoFeature(feature, layer) {
                 <img src="${imagePath}" alt="Photo">
                 <p class="caption">${captionText}</p>
             </div>`;
-        layer.bindPopup(popupContent, { maxWidth: 500 }); // maxWidth for the popup bubble itself
+        // Adjust maxWidth to accommodate the .polaroid's CSS max-width (e.g., 450px + buffer)
+        layer.bindPopup(popupContent, { maxWidth: 500 });
     }
 
     // Mouseover event

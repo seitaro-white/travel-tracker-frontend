@@ -78,6 +78,28 @@ h1 {
     border: 2px solid whitesmoke; /* Hover state border */
 }
 
+/* Styles to make Leaflet popup container transparent */
+.leaflet-popup-content-wrapper {
+    background: transparent;
+    color: #333; /* Or your desired text color if not set by .polaroid */
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0; /* Remove default border-radius */
+}
+
+.leaflet-popup-content {
+    margin: 0 !important; /* Override Leaflet's default margin */
+    width: auto !important; /* Allow content to dictate width up to maxWidth */
+}
+
+.leaflet-popup-tip-container {
+    display: none; /* Hide the little triangle tip */
+}
+
+/* Optional: You might want to style the close button if it looks out of place,
+   or hide it with: .leaflet-popup-close-button { display: none; }
+   For now, we'll keep Leaflet's default close button. */
+
 /* --- Google Font Import (add to <head> or CSS import) --- */
 /* @import url('https://fonts.googleapis.com/css2?family=Caveat&display=swap'); */
 /* Or add to HTML head:
@@ -89,32 +111,37 @@ h1 {
 .polaroid {
   background-color: #fff; /* The "paper" color of the Polaroid */
   border: 1px solid #E0E0E0; /* A very light grey border for the paper edge */
-  display: inline-block; /* Allows multiple Polaroids to sit side-by-side and respects padding */
-  margin: 15px; /* Spacing around the Polaroid */
+  display: block; /* Changed to block for centering with margin auto */
+  margin: 20px auto; /* Add some margin and center it within the popup content area */
 
   /* The key: Padding creates the border. Top, Right, Bottom (thicker), Left */
-  padding: 10px 10px 45px 10px;
+  padding: 15px 15px 60px 15px; /* Adjusted padding for a larger size */
 
-  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.25); /* Drop shadow for depth */
-  transition: transform 0.2s ease-in-out; /* For hover effects */
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* Adjusted drop shadow */
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Added box-shadow to transition */
 
-  /* For the image inside */
-  width: 200px; /* Set a width for the entire Polaroid frame */
+  width: 40vw; /* Set width to 40% of viewport width */
+  max-width: 450px; /* Set a maximum pixel width */
+  max-height: 80vh; /* Set a maximum height relative to viewport height */
+  overflow-y: auto; /* Add scroll if content exceeds max-height */
+  box-sizing: border-box; /* Ensures padding and border are included in width/height */
 }
 
 .polaroid img {
   display: block; /* Removes any extra space below the image if it's inline */
   width: 100%;   /* Makes the image fill the available space *within* the padding */
   height: auto;  /* Maintains aspect ratio */
+  object-fit: cover; /* Cover the area, might crop; use 'contain' to show full image */
 }
 
 .polaroid .caption {
   text-align: center;
-  font-size: 0.9em;
+  font-size: 1em; /* Adjusted font size */
   color: #333;
-  margin-top: 10px; /* Space between image and caption */
-  font-family: 'Caveat', cursive; /* A nice handwritten-style font. Import it via Google Fonts or similar */
+  margin-top: 15px; /* Space between image and caption */
+  font-family: 'Caveat', cursive;
   word-wrap: break-word; /* Ensure long filenames wrap */
+  padding: 0 10px; /* Add some horizontal padding for caption text */
 }
 
 /* Optional: Add a slight rotation */
