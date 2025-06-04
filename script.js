@@ -103,7 +103,7 @@ async function setupMap() {
             filePath: 'assets/points/geotagged_photos.geojson',
             onEachFeature: onEachPhotoFeature,
             pointToLayer: pointToLayerForPhotos,
-            staggerDelay: 75 // Added: Delay in ms for staggering marker appearance
+            staggerDelay: 1 // Added: Delay in ms for staggering marker appearance
         }
         // Add other point layer configurations here if needed
     ];
