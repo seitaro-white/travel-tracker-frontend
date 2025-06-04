@@ -102,7 +102,8 @@ async function setupMap() {
             type: 'point',
             filePath: 'assets/points/geotagged_photos.geojson',
             onEachFeature: onEachPhotoFeature,
-            pointToLayer: pointToLayerForPhotos
+            pointToLayer: pointToLayerForPhotos,
+            staggerDelay: 75 // Added: Delay in ms for staggering marker appearance
         }
         // Add other point layer configurations here if needed
     ];
@@ -145,7 +146,9 @@ async function setupMap() {
     // Load all point layers after all line animations are initiated
     for (const layerConfig of pointLayersConfig) {
         if (layerConfig.type === 'point') {
-            await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
+            // Use the configured staggerDelay, or a default if not specified (though addPointGeoJsonLayer also has a default)
+            const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
+            await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
         }
     }
 
