@@ -112,17 +112,17 @@ h1 {
   background-color: #fff; /* The "paper" color of the Polaroid */
   border: 1px solid #E0E0E0; /* A very light grey border for the paper edge */
   display: block; /* Changed to block for centering with margin auto */
-  margin: 20px auto; /* Add some margin and center it within the popup content area */
+  /* margin: 20px auto; */ /* REMOVED - Overridden by animated wrapper context */
 
   /* The key: Padding creates the border. Top, Right, Bottom (thicker), Left */
   padding: 15px 15px 60px 15px; /* Adjusted padding for a larger size */
 
   box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* Adjusted drop shadow */
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Added box-shadow to transition */
+  transition: box-shadow 0.2s ease-in-out; /* MODIFIED - Kept for hover, transform part was redundant */
 
   width: 40vw; /* Set width to 40% of viewport width */
-  max-width: 450px; /* Set a maximum pixel width */
-  max-height: 80vh; /* Set a maximum height relative to viewport height */
+  max-width: 450px;
+  max-height: 80vh;
   overflow-y: auto; /* Add scroll if content exceeds max-height */
   box-sizing: border-box; /* Ensures padding and border are included in width/height */
 }
@@ -144,18 +144,10 @@ h1 {
   padding: 0 10px; /* Add some horizontal padding for caption text */
 }
 
-/* Optional: Add a slight rotation */
-.polaroid.rotated {
-  transform: rotate(-3deg);
-}
 
-.polaroid:hover {
-  transform: scale(1.05) rotate(1deg); /* Slight grow and straighten on hover */
-  box-shadow: 5px 5px 12px rgba(0, 0, 0, 0.3);
-}
 
 /* New styles for the animated polaroid */
-.polaroid-animated-wrapper {
+.polaroid-animated-wrapper-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -168,27 +160,33 @@ h1 {
     pointer-events: none; /* Wrapper doesn't catch clicks initially */
     opacity: 0; /* Start fully transparent */
     background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent backdrop */
-    transition: opacity 0.3s ease-in-out, align-items 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    transition: opacity 0.3s ease-in-out, align-items 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.02); /* MODIFIED */
 }
 
-.polaroid-animated-wrapper.visible {
+.polaroid-animated-wrapper-overlay.visible {
     opacity: 1;
     pointer-events: auto; /* Wrapper catches clicks when visible (e.g., to close) */
     align-items: center; /* Animate to center */
 }
 
 /* The .polaroid inside the wrapper */
-.polaroid-animated-wrapper .polaroid {
+.polaroid-animated-wrapper-overlay .polaroid {
     /* .polaroid already has width, max-width, background, padding, etc. from existing styles */
     margin: 0; /* Override existing margin for flex centering */
     transform: translateY(100%); /* Start below its final position in the flex container */
     opacity: 0;
-    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.4s ease-out 0.1s;
+    transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.02), opacity 0.4s ease-out 0.1s; /* MODIFIED */
     /* cubic-bezier for a slight overshoot effect, opacity delay to sync with wrapper */
     pointer-events: auto; /* Polaroid itself should always be interactive */
 }
 
-.polaroid-animated-wrapper.visible .polaroid {
+.polaroid-animated-wrapper-overlay.visible .polaroid {
     transform: translateY(0); /* Animate to its natural position within the centered flex container */
     opacity: 1;
+}
+
+/* Add this new rule for the hover effect on the animated polaroid */
+.polaroid-animated-wrapper-overlay.visible .polaroid:hover {
+    transform: translateY(0) scale(1.05) rotate(1deg); /* Combine transforms */
+    box-shadow: 5px 5px 12px rgba(0, 0, 0, 0.3); /* Re-apply box-shadow */
 }

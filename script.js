@@ -19,24 +19,14 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
 // Specific callback for photo popups
 function onEachPhotoFeature(feature, layer) {
     if (feature.properties && feature.properties.filepath) {
-        // const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
-        // const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
 
-        // const popupContent = `
-        //     <div class="polaroid">
-        //         <img src="${imagePath}" alt="Photo">
-        //         <p class="caption">${captionText}</p>
-        //     </div>`;
-        // layer.bindPopup(popupContent, { maxWidth: 500 }); // REMOVE THIS LINE
-
-        // NEW: Add click listener to show animated polaroid
         layer.on('click', function () {
             showAnimatedPolaroid(feature);
         });
     }
 
     // Mouseover event (keep existing for marker icon hover effect)
-    layer.on('mouseover', function (e) {
+    layer.on('mouseover', function () {
         const iconDiv = this._icon; // Get the L.divIcon's main div element
         if (iconDiv) {
             const imgElement = iconDiv.querySelector('img.photo-marker-image');
@@ -53,7 +43,7 @@ function onEachPhotoFeature(feature, layer) {
     });
 
     // Mouseout event (keep existing for marker icon hover effect)
-    layer.on('mouseout', function (e) {
+    layer.on('mouseout', function () {
         const iconDiv = this._icon;
         if (iconDiv) {
             const imgElement = iconDiv.querySelector('img.photo-marker-image');
@@ -90,26 +80,9 @@ function pointToLayerForPhotos(feature, latlng) {
 
 // NEW FUNCTIONS for animated polaroid
 
-function hideAnimatedPolaroidOnClick() {
-    const wrapper = document.querySelector('.polaroid-animated-wrapper');
-    if (wrapper && wrapper.classList.contains('visible')) {
-        wrapper.classList.remove('visible');
-
-        // Listen for the end of the opacity transition on the wrapper to remove it from DOM
-        const onTransitionEnd = (event) => {
-            if (event.target === wrapper && event.propertyName === 'opacity') {
-                if (wrapper.parentElement) { // Check again before removing
-                    wrapper.remove();
-                }
-            }
-        };
-        wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
-    }
-}
-
 function showAnimatedPolaroid(feature) {
-    // If an old wrapper exists, remove it immediately to prevent overlap or issues.
-    const existingWrapper = document.querySelector('.polaroid-animated-wrapper');
+    // remove old overlay
+    const existingWrapper = document.querySelector('.polaroid-animated-wrapper-overlay');
     if (existingWrapper) {
         existingWrapper.remove();
     }
@@ -117,11 +90,11 @@ function showAnimatedPolaroid(feature) {
     const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
     const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
 
-    // Create wrapper
+    // Create overlay
     const wrapper = document.createElement('div');
-    wrapper.className = 'polaroid-animated-wrapper';
-    wrapper.onclick = function(event) { // Click on backdrop to close
-        if (event.target === wrapper) { // Only if click is on wrapper itself
+    wrapper.className = 'polaroid-animated-wrapper-overlay';
+    wrapper.onclick = function(event) {
+        if (event.target === wrapper) {
             hideAnimatedPolaroidOnClick();
         }
     };
@@ -152,6 +125,23 @@ function showAnimatedPolaroid(feature) {
             wrapper.classList.add('visible');
         });
     });
+}
+
+function hideAnimatedPolaroidOnClick() {
+    const wrapper = document.querySelector('.polaroid-animated-wrapper-overlay');
+    if (wrapper && wrapper.classList.contains('visible')) {
+        wrapper.classList.remove('visible');
+
+        // Listen for the end of the opacity transition on the wrapper to remove it from DOM
+        const onTransitionEnd = (event) => {
+            if (event.target === wrapper && event.propertyName === 'opacity') {
+                if (wrapper.parentElement) { // Check again before removing
+                    wrapper.remove();
+                }
+            }
+        };
+        wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
+    }
 }
 
 // Main function to set up the map and layers
