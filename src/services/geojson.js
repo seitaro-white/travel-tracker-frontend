@@ -26,10 +26,9 @@ function filterGeoJsonFeatures(geojsonData, animationOrderFilter) {
 
 // Function to animate a set of GeoJSON features
 function animateFeatures(map, features, styleOptions, onEachFeatureCallback, duration = 2000) { // Added duration parameter with default
-    if (typeof L.motion === 'undefined') {
-        console.error('Leaflet.motion plugin not loaded. Cannot animate lines. Animation will not occur.');
-        return;
-    }
+
+
+    const createdLayers = []; // Array to store created layers
 
     const invisibleIcon = L.divIcon({
         html: '',
@@ -58,6 +57,7 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback, dur
                 if (onEachFeatureCallback) {
                     onEachFeatureCallback(feature, motionLayer);
                 }
+                createdLayers.push(motionLayer); // Add layer to the array
             }
         } else if (geometryType === 'MultiLineString') {
             for (const lineSegmentCoords of coordinates) {
@@ -67,10 +67,12 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback, dur
                     if (onEachFeatureCallback) {
                         onEachFeatureCallback(feature, motionLayer);
                     }
+                    createdLayers.push(motionLayer); // Add layer to the array
                 }
             }
         }
     }
+    return createdLayers; // Return the array of created layers
 }
 
 // Refactored function to load and add animated GeoJSON LineString/MultiLineString layers
@@ -79,17 +81,19 @@ export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, o
         const geojsonData = await fetchGeoJson(filePath); // Now throws on error
 
         const featuresToAnimate = filterGeoJsonFeatures(geojsonData, animationOrderFilter);
-        animateFeatures(map, featuresToAnimate, styleOptions, onEachFeatureCallback, duration); // Pass duration
+        // animateFeatures now returns the layers
+        const animatedLayers = animateFeatures(map, featuresToAnimate, styleOptions, onEachFeatureCallback, duration); // Pass duration
+        return animatedLayers; // Return the created layers
 
     } catch (error) {
         console.error(`Critical error loading/processing GeoJSON from ${filePath}:`, error);
-        throw error;
-
+        throw error; // Re-throw the error so the caller knows something went wrong
     }
 }
 
 // NEW function to load and add STATIC GeoJSON Point layers
 export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback, staggerMs = 50) { // Added staggerMs with a default value
+    const addedLayers = []; // Array to store added layers
     try {
         const geojsonData = await fetchGeoJson(filePath);
 
@@ -108,7 +112,8 @@ export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback,
                     type: "FeatureCollection",
                     features: [feature]
                 };
-                L.geoJSON(singleFeatureGeoJson, layerOptions).addTo(map);
+                const layer = L.geoJSON(singleFeatureGeoJson, layerOptions).addTo(map);
+                addedLayers.push(layer); // Add the created layer to our array
 
                 // Wait for the specified stagger duration before adding the next marker
                 if (staggerMs > 0) {
@@ -118,14 +123,15 @@ export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback,
         } else {
             // Fallback if geojsonData.features is not available or empty
             console.warn(`No features found or invalid GeoJSON structure in ${filePath}. Attempting to add layer directly.`);
-            L.geoJSON(geojsonData, layerOptions).addTo(map);
+            const layer = L.geoJSON(geojsonData, layerOptions).addTo(map);
+            addedLayers.push(layer); // Add the created layer
         }
+        return addedLayers; // Return the array of added layers
 
     } catch (error) {
         // Catch any unexpected errors during the L.geoJSON processing or other parts
         console.error('Error processing Point GeoJSON:', filePath, error);
-        // Depending on requirements, you might want to rethrow the error
-        // throw error;
+        throw error; // Re-throw the error
     }
 }
 
@@ -141,10 +147,12 @@ export async function addStaticLineGeoJsonLayer(map, filePath, styleOptions, onE
         if (onEachFeatureCallback) {
             layerOptions.onEachFeature = onEachFeatureCallback;
         }
-        L.geoJSON(geojsonData, layerOptions).addTo(map);
+        const layer = L.geoJSON(geojsonData, layerOptions).addTo(map);
+        return layer; // Return the created layer
 
     } catch (error) {
         // Catch any unexpected errors during the L.geoJSON processing or other parts
         console.error('Error processing Static Line GeoJSON:', filePath, error);
+        throw error; // Re-throw the error
     }
 }
