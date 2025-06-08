@@ -89,7 +89,7 @@ export async function addAnimatedLineGeoJsonLayer(map, filePath, styleOptions, o
 }
 
 // NEW function to load and add STATIC GeoJSON Point layers
-export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
+export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback, staggerMs = 50) { // Added staggerMs with a default value
     try {
         const geojsonData = await fetchGeoJson(filePath);
 
@@ -100,11 +100,32 @@ export async function addPointGeoJsonLayer(map, filePath, onEachFeatureCallback,
         if (pointToLayerCallback) {
             layerOptions.pointToLayer = pointToLayerCallback;
         }
-        L.geoJSON(geojsonData, layerOptions).addTo(map);
+
+        if (geojsonData && geojsonData.features) {
+            for (const feature of geojsonData.features) {
+                // Create a GeoJSON object for the single feature to process it individually
+                const singleFeatureGeoJson = {
+                    type: "FeatureCollection",
+                    features: [feature]
+                };
+                L.geoJSON(singleFeatureGeoJson, layerOptions).addTo(map);
+
+                // Wait for the specified stagger duration before adding the next marker
+                if (staggerMs > 0) {
+                    await new Promise(resolve => setTimeout(resolve, staggerMs));
+                }
+            }
+        } else {
+            // Fallback if geojsonData.features is not available or empty
+            console.warn(`No features found or invalid GeoJSON structure in ${filePath}. Attempting to add layer directly.`);
+            L.geoJSON(geojsonData, layerOptions).addTo(map);
+        }
 
     } catch (error) {
         // Catch any unexpected errors during the L.geoJSON processing or other parts
         console.error('Error processing Point GeoJSON:', filePath, error);
+        // Depending on requirements, you might want to rethrow the error
+        // throw error;
     }
 }
 
