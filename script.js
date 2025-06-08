@@ -93,7 +93,7 @@ function showAnimatedPolaroid(feature) {
     // Create overlay
     const wrapper = document.createElement('div');
     wrapper.className = 'polaroid-animated-wrapper-overlay';
-    wrapper.onclick = function(event) {
+    wrapper.onclick = function (event) {
         if (event.target === wrapper) {
             hideAnimatedPolaroidOnClick();
         }
@@ -109,7 +109,7 @@ function showAnimatedPolaroid(feature) {
     `;
 
     // Prevent clicks on the polaroid itself from closing it via the wrapper's click listener
-    polaroidElement.onclick = function(event) {
+    polaroidElement.onclick = function (event) {
         event.stopPropagation();
     };
 
