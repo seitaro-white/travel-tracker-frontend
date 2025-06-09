@@ -24,12 +24,25 @@ function filterGeoJsonFeatures(geojsonData, animationOrderFilter) {
     return geojsonData.features;
 }
 
-// Function to animate a set of GeoJSON features
-function animateFeatures(map, features, styleOptions, onEachFeatureCallback, duration = 2000) { // Added duration parameter with default
+// helper to turn a single coords array into a motion layer
+function animateCoords(map, coords, styleOptions, onEachFeatureCallback, feature, invisibleIcon, duration, createdLayers) {
+    const latLngs = coords.map(c => [c[1], c[0]]);
+    // If no coordinates, skip creating a layer
+    if (!latLngs.length) return;
 
+    const motionLayer = L.motion
+        .polyline(latLngs,
+            { ...styleOptions },
+            { auto: true, duration },
+            { icon: invisibleIcon })
+        .addTo(map);
 
-    const createdLayers = []; // Array to store created layers
+    if (onEachFeatureCallback) onEachFeatureCallback(feature, motionLayer);
+    createdLayers.push(motionLayer);
+}
 
+function animateFeatures(map, features, styleOptions, onEachFeatureCallback, duration = 2000) {
+    const createdLayers = [];
     const invisibleIcon = L.divIcon({
         html: '',
         className: 'leaflet-motion-invisible-marker',
@@ -37,42 +50,19 @@ function animateFeatures(map, features, styleOptions, onEachFeatureCallback, dur
         iconAnchor: [0, 0]
     });
 
-    const processCoordsToLatLng = (coords) => coords.map(c => [c[1], c[0]]);
-
     for (const feature of features) {
-        const coordinates = feature.geometry.coordinates;
-        const geometryType = feature.geometry.type;
-
-        const motionLineOptions = { ...styleOptions };
-        const motionAnimationOptions = {
-            auto: true,
-            duration: duration, // Use the passed duration
-        };
-        const markerOptions = { icon: invisibleIcon };
-
-        if (geometryType === 'LineString') {
-            const latLngs = processCoordsToLatLng(coordinates);
-            if (latLngs.length > 0) {
-                const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
-                if (onEachFeatureCallback) {
-                    onEachFeatureCallback(feature, motionLayer);
-                }
-                createdLayers.push(motionLayer); // Add layer to the array
-            }
-        } else if (geometryType === 'MultiLineString') {
-            for (const lineSegmentCoords of coordinates) {
-                const latLngs = processCoordsToLatLng(lineSegmentCoords);
-                if (latLngs.length > 0) {
-                    const motionLayer = L.motion.polyline(latLngs, motionLineOptions, motionAnimationOptions, markerOptions).addTo(map);
-                    if (onEachFeatureCallback) {
-                        onEachFeatureCallback(feature, motionLayer);
-                    }
-                    createdLayers.push(motionLayer); // Add layer to the array
-                }
+        const { type, coordinates } = feature.geometry;
+        if (type === 'LineString') {
+            animateCoords(map, coordinates, styleOptions, onEachFeatureCallback, feature, invisibleIcon, duration, createdLayers);
+        }
+        else if (type === 'MultiLineString') {
+            for (const segment of coordinates) {
+                animateCoords(map, segment, styleOptions, onEachFeatureCallback, feature, invisibleIcon, duration, createdLayers);
             }
         }
     }
-    return createdLayers; // Return the array of created layers
+
+    return createdLayers;
 }
 
 // Refactored function to load and add animated GeoJSON LineString/MultiLineString layers
