@@ -1,5 +1,5 @@
-import { geoJSONLayerStyles } from './geojson_styles.js';
-import { addAnimatedLineGeoJsonLayer, addPointGeoJsonLayer, addStaticLineGeoJsonLayer } from '/src/services/geojson.js';
+import { geoJSONLayerStyles} from './geojson_styles.js';
+import {animateChainedGeoJson, addGeoJsonLineLayer, addGeoJsonPointLayer} from '/src/services/geojson.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
@@ -150,11 +150,12 @@ async function setupMap() {
 
     // Configuration for the animated line layer
     const animatedLineLayerConfig = {
-        type: 'line',
         filePath: 'assets/lines/animation_tracks.geojson',
         style: geoJSONLayerStyles.publicTransport,
-        // onEachFeature: optionalCallbackForLines // Uncomment if you have one
     };
+
+    // Start the chained animation with the initial feature.
+    await animateChainedGeoJson(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style);
 
     // Configuration for point layers
     const pointLayersConfig = [
@@ -168,47 +169,21 @@ async function setupMap() {
         // Add other point layer configurations here if needed
     ];
 
-    const animationDelay = 2000; // Delay between starting each animation chunk
-
-    // Handle sequenced animation for the main animated_tracks.geojson
-    if (animatedLineLayerConfig.filePath === 'assets/lines/animation_tracks.geojson') {
-        // Call each animation order sequentially with a delay
-
-        // AnimationOrder 1.0
-        const animatedLayers1 = await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 1.0, 500); // Example: 3000ms duration
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // AnimationOrder 2.0
-        const animatedLayers2 = await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 2.0, 1000); // Example: 2500ms duration
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // AnimationOrder 3.0
-        const animatedLayers3 = await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 3.0, 1000); // Example: 2000ms duration
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // AnimationOrder 4.0
-        const animatedLayers4 = await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 4.0, 2000); // Example: 3500ms duration
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // AnimationOrder 5.0
-        const animatedLayers5 = await addAnimatedLineGeoJsonLayer(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style, animatedLineLayerConfig.onEachFeature, 5.0, 1000); // Example: 4000ms duration
-        // No delay needed after the last animation order
-    }
     // Add other animated line layers here if you have any that are not part of the sequence
     // For example:
     // await addAnimatedLineGeoJsonLayer(map, 'path/to/other_animated_lines.geojson', someStyle, someCallback, undefined);
 
     // Add static walking routes
-    const walkingRoutesLayer = await addStaticLineGeoJsonLayer(map, 'assets/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
-    await addStaticLineGeoJsonLayer(map, 'assets/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
-    await addStaticLineGeoJsonLayer(map, 'assets/lines/ferries.geojson', geoJSONLayerStyles.ferry);
+    await addGeoJsonLineLayer(map, 'assets/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
+    await addGeoJsonLineLayer(map, 'assets/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
+    await addGeoJsonLineLayer(map, 'assets/lines/ferries.geojson', geoJSONLayerStyles.ferry);
 
     // Load all point layers after all line animations are initiated
     for (const layerConfig of pointLayersConfig) {
         if (layerConfig.type === 'point') {
-            // Use the configured staggerDelay, or a default if not specified (though addPointGeoJsonLayer also has a default)
+            // Use the configured staggerDelay, or a default if not specified (though addGeoJsonPointLayer also has a default)
             const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
-            const photoPointLayers = await addPointGeoJsonLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
+            await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
         }
     }
 
