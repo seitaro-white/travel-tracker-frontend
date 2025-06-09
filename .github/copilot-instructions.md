@@ -7,6 +7,10 @@ should implement the simplest, minimalist solution that meets the requirements. 
 it is often better for the code to break in a controlled way than to silently fail or
 mask errors with additional complexity, so that it can be diagnosed and fixed.
 
+However, you should add lots of comments to explain the code, especially if the logic is not immediately
+obvious. Remember that the developer for this project is familiar with Python,
+but is fairly new to Javascript and may need some guidance on what is happening in the code.
+
 If there are better, but more complex approaches to the problem, then you can suggest them in your
 response but do not actually implement this in the code unless specifically requested.
 
