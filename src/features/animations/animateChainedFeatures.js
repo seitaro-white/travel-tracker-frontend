@@ -1,5 +1,5 @@
-import { AnimatedLineStyles } from './geojson_styles.js';
-import { fetchGeoJson } from './geojson.js';
+import { AnimatedLineStyles } from '../geojson/geojsonStyles.js';
+import { fetchGeoJson } from '../geojson/geojsonService.js';
 
 // This function handles chained animations for GeoJSON features.
 // It fetches the GeoJSON, finds the starting feature and then recursively animates

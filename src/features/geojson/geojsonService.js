@@ -1,4 +1,4 @@
-import { AnimatedLineStyles } from './geojson_styles.js';
+import { AnimatedLineStyles } from './geojsonStyles.js';
 
 // Function to fetch GeoJSON data
 export async function fetchGeoJson(filePath) {

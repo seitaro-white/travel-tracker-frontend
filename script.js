@@ -1,6 +1,6 @@
-import { LineStyles, AnimatedLineStyles } from './src/services/geojson_styles.js';
-import { addGeoJsonLineLayer, addGeoJsonPointLayer } from './src/services/geojson.js';
-import { animateChainedGeoJson } from './src/services/animationService.js';
+import { LineStyles } from './src/features/geojson/geojsonStyles.js';
+import { addGeoJsonLineLayer, addGeoJsonPointLayer } from './src/features/geojson/geojsonService.js';
+import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
