@@ -1,3 +1,5 @@
+import { AnimatedLineStyles } from './geojson_styles.js';
+
 // Function to fetch GeoJSON data
 async function fetchGeoJson(filePath) {
     const response = await fetch(filePath);
@@ -90,79 +92,54 @@ export async function addGeoJsonLineLayer(map, filePath, styleOptions, onEachFea
  * @param {Object} map - The Leaflet map instance.
  * @param {string} filePath - Path to the GeoJSON file.
  * @param {Object} styleOptions - Style for the animated polyline.
- * @param {number} [defaultSpeedKmH=1] - Default motion speed in km/h if not specified in feature.
+ * @param {number} defaultSpeedKmH - Default motion speed in km/h if not specified in feature.
  */
-export async function animateChainedGeoJson(map, filePath, styleOptions, defaultSpeedKmH = 500000) {
-    // Fetch GeoJSON data from the given file path.
-    const geojson = await fetchGeoJson(filePath);
-    const features = geojson.features;
+export async function animateChainedGeoJson(
+  map,
+  filePath,
+  // now defaults to our AnimatedLineStyles
+  styleMap = AnimatedLineStyles,
+  defaultSpeedKmH = 50000
+) {
+  const geojson = await fetchGeoJson(filePath);
+  const features = geojson.features;
+  const byUUID = new Map(features.map(f => [f.properties.uuid, f]));
+  const initialFeature = features.find(f => f.properties.name === "Initial Haneda");
 
-    // Build a map of features using feature.properties.fid as key.
-    const byUUID = new Map(features.map(f => [f.properties.uuid, f]));
+  // invisible marker for the motion plugin
+  const invisibleIcon = L.divIcon({ html: "", className: "leaflet-motion-invisible-marker", iconSize: [0,0] });
 
-    // Find the starting feature with name "Initial Haneda".
-    const initialFeature = features.find(f => f.properties.name === "Initial Haneda");
-    if (!initialFeature) {
-        throw new Error('No initial feature with Name "Initial Haneda" found.');
-    }
+  async function play(feature) {
+    const type = feature.properties.type;
+    // pick speed based on type
+    const speed = (type === "Shinkansen" || type === "LongFerry")
+      ? 100000
+      : defaultSpeedKmH;
+    // pick the right style or fall back to default
+    const style = styleMap[type] || styleMap.default;
 
-    // Define an invisible icon used for the motion layer.
-    const invisibleIcon = L.divIcon({
-        html: '',
-        className: 'leaflet-motion-invisible-marker',
-        iconSize: [0, 0],
-        iconAnchor: [0, 0]
-    });
+    const segments = feature.geometry.type === "MultiLineString"
+      ? feature.geometry.coordinates
+      : [feature.geometry.coordinates];
 
-    /**
-     * Recursively animate a feature and then its triggers.
-     *
-     * @param {Object} feature - The GeoJSON feature to animate.
-     */
-    async function play(feature) {
-        // Use the feature's speed if available, otherwise fallback to defaultSpeedKmH.
-        const speed = feature.properties.speed || defaultSpeedKmH;
+    // animate each segment concurrently
+    await Promise.all(segments.map(coords => {
+      const latLngs = coords.map(c => [c[1], c[0]]);
+      const layer = L.motion
+        .polyline(latLngs, { ...style }, { auto: true, speed }, { icon: invisibleIcon })
+        .addTo(map);
+      return new Promise(r => layer.once(L.Motion.Event.Ended, r));
+    }));
 
-        // Build an array of coordinate sets (single or multiple segments).
-        let segments = [];
-        if (feature.geometry.type === 'LineString') {
-            segments = [feature.geometry.coordinates];
-        } else if (feature.geometry.type === 'MultiLineString') {
-            segments = feature.geometry.coordinates;
-        }
+    // trigger any child features
+    const triggers = feature.properties.triggers || [];
+    await Promise.all(triggers.map(id =>
+      byUUID.has(id) ? play(byUUID.get(id)) : Promise.resolve()
+    ));
+  }
 
-        console.log(`Started animating feature: ${feature.properties.name}`);
-
-        // Animate all segments concurrently and wait for them to finish.
-        await Promise.all(
-            segments.map(coords => {
-                // Convert each coordinate to a latLng pair ([lat, lng]).
-                const latLngs = coords.map(c => [c[1], c[0]]);
-                // Create and add the motion polyline to the map using the speed option.
-                const layer = L.motion
-                    .polyline(latLngs, { ...styleOptions }, { auto: true, speed: speed }, { icon: invisibleIcon })
-                    .addTo(map);
-                console.log(`Animating segment for feature: ${feature.properties.name} at ${speed} km/h`);
-                // Return a Promise that resolves when the motion animation ends.
-                return new Promise(resolve => layer.once(L.Motion.Event.Ended, resolve));
-            })
-        );
-        console.log(`Finished animating feature: ${feature.properties.name}`);
-
-        // Process any triggered features recursively.
-        const triggerArray = feature.properties.triggers || [];
-        await Promise.all(
-            triggerArray.map(fid => {
-                const nextFeature = byUUID.get(fid);
-                console.log(`Triggering feature with fid: ${fid}`);
-                if (nextFeature) {
-                    return play(nextFeature);
-                }
-                return Promise.resolve();
-            })
-        );
-    }
-
-    // Start the chain by playing the initial feature.
-    await play(initialFeature);
+  if (!initialFeature) {
+    throw new Error('No initial feature with Name "Initial Haneda" found.');
+  }
+  await play(initialFeature);
 }

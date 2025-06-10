@@ -1,5 +1,5 @@
-import { geoJSONLayerStyles} from './geojson_styles.js';
-import {animateChainedGeoJson, addGeoJsonLineLayer, addGeoJsonPointLayer} from '/src/services/geojson.js';
+import { LineStyles, AnimatedLineStyles } from './src/services/geojson_styles.js';
+import { animateChainedGeoJson, addGeoJsonLineLayer, addGeoJsonPointLayer } from './src/services/geojson.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
@@ -146,18 +146,22 @@ function hideAnimatedPolaroidOnClick() {
 
 // Main function to set up the map and layers
 async function setupMap() {
-    const map = initializeMap('map', [36.2048, 138.2529], 7);
+  const map = initializeMap('map', [36.2048, 138.2529], 7);
 
-    // Configuration for the animated line layer
-    const animatedLineLayerConfig = {
-        filePath: 'assets/lines/animation_tracks.geojson',
-        style: geoJSONLayerStyles.publicTransport,
-    };
+  // use AnimatedLineStyles for the chained animation
+  await animateChainedGeoJson(
+    map,
+    'assets/lines/animation_tracks.geojson',
+    AnimatedLineStyles
+  );
 
-    // Start the chained animation with the initial feature.
-    await animateChainedGeoJson(map, animatedLineLayerConfig.filePath, animatedLineLayerConfig.style);
+  // use LineStyles for your static layers
+  await addGeoJsonLineLayer(map, 'assets/lines/public_transport.geojson', LineStyles.publicTransport);
+  await addGeoJsonLineLayer(map, 'assets/lines/walking_routes.geojson',      LineStyles.walking);
+  await addGeoJsonLineLayer(map, 'assets/lines/cycling_routes.geojson',      LineStyles.cycling);
+  await addGeoJsonLineLayer(map, 'assets/lines/ferries.geojson',             LineStyles.ferry);
 
-    // Configuration for point layers
+  // Configuration for point layers
     const pointLayersConfig = [
         {
             type: 'point',
@@ -168,15 +172,6 @@ async function setupMap() {
         }
         // Add other point layer configurations here if needed
     ];
-
-    // Add other animated line layers here if you have any that are not part of the sequence
-    // For example:
-    // await addAnimatedLineGeoJsonLayer(map, 'path/to/other_animated_lines.geojson', someStyle, someCallback, undefined);
-
-    // Add static walking routes
-    await addGeoJsonLineLayer(map, 'assets/lines/walking_routes.geojson', geoJSONLayerStyles.walking);
-    await addGeoJsonLineLayer(map, 'assets/lines/cycling_routes.geojson', geoJSONLayerStyles.cycling);
-    await addGeoJsonLineLayer(map, 'assets/lines/ferries.geojson', geoJSONLayerStyles.ferry);
 
     // Load all point layers after all line animations are initiated
     for (const layerConfig of pointLayersConfig) {
