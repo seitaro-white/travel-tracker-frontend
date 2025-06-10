@@ -97,41 +97,40 @@ export async function addGeoJsonLineLayer(map, filePath, styleOptions, onEachFea
 export async function animateChainedGeoJson(
   map,
   filePath,
-  // now defaults to our AnimatedLineStyles
-  styleMap = AnimatedLineStyles,
-  defaultSpeedKmH = 50000
+  styleMap = AnimatedLineStyles
 ) {
   const geojson = await fetchGeoJson(filePath);
   const features = geojson.features;
   const byUUID = new Map(features.map(f => [f.properties.uuid, f]));
   const initialFeature = features.find(f => f.properties.name === "Initial Haneda");
-
-  // invisible marker for the motion plugin
   const invisibleIcon = L.divIcon({ html: "", className: "leaflet-motion-invisible-marker", iconSize: [0,0] });
 
   async function play(feature) {
-    const type = feature.properties.type;
-    // pick speed based on type
-    const speed = (type === "Shinkansen" || type === "LongFerry")
-      ? 100000
-      : defaultSpeedKmH;
-    // pick the right style or fall back to default
-    const style = styleMap[type] || styleMap.default;
+    // pick this feature’s config or fall back
+    const cfg = styleMap[feature.properties.type] || styleMap.default;
+    // pull speed out, the rest is pure path styling
+    const { speed: motionSpeed, ...pathStyle } = cfg;
 
+    // break into one or more segments
     const segments = feature.geometry.type === "MultiLineString"
       ? feature.geometry.coordinates
       : [feature.geometry.coordinates];
 
-    // animate each segment concurrently
+    // animate each segment
     await Promise.all(segments.map(coords => {
       const latLngs = coords.map(c => [c[1], c[0]]);
       const layer = L.motion
-        .polyline(latLngs, { ...style }, { auto: true, speed }, { icon: invisibleIcon })
+        .polyline(
+          latLngs,
+          pathStyle,                    // only color/weight/opacity…
+          { auto: true, speed: motionSpeed }, // …and speed in motion options
+          { icon: invisibleIcon }
+        )
         .addTo(map);
       return new Promise(r => layer.once(L.Motion.Event.Ended, r));
     }));
 
-    // trigger any child features
+    // then recurse to any triggered children
     const triggers = feature.properties.triggers || [];
     await Promise.all(triggers.map(id =>
       byUUID.has(id) ? play(byUUID.get(id)) : Promise.resolve()
