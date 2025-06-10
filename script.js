@@ -67,21 +67,14 @@ function fadeInLayers(layers) {
 
             // 3. Defer setting opacity to 1 using 'requestAnimationFrame'.
             // 'requestAnimationFrame' asks the browser to run a function just before the next repaint.
-            // This is important for CSS transitions to work reliably when styles are changed with JavaScript.
-            // If we set opacity to 0 and then immediately to 1 in the same block of JavaScript code,
-            // the browser might optimize it and not "see" the change, so the transition wouldn't play.
+            // This ensures the browser has a chance to apply the opacity: 0 and the transition rule
+            // before we ask it to animate to opacity: 1.
             requestAnimationFrame(() => {
-                console.log(`${logPrefix}First rAF, el.style.opacity before change:`, el.style.opacity);
-                // Using a second, nested 'requestAnimationFrame' is a common defensive pattern.
-                // It gives the browser an extra "tick" to ensure it has processed the
-                // initial opacity (0) and the transition rule before we ask it to animate to opacity 1.
-                requestAnimationFrame(() => {
-                    console.log(`${logPrefix}Second rAF, setting opacity to 1`);
-                    // Now, change the opacity to 1. Because a transition is defined for 'opacity',
-                    // the browser will animate this change from 0 to 1 over 1 second.
-                    el.style.opacity = 1;
-                    console.log(`${logPrefix}After setting opacity to 1:`, el.style.opacity);
-                });
+                console.log(`${logPrefix}In rAF, setting opacity to 1. Current opacity:`, el.style.opacity);
+                // Now, change the opacity to 1. Because a transition is defined for 'opacity',
+                // the browser will animate this change from 0 to 1 over 1 second.
+                el.style.opacity = 1;
+                console.log(`${logPrefix}After setting opacity to 1 in rAF:`, el.style.opacity);
             });
         } else {
             // If 'el' is null or undefined, it means we couldn't find the DOM element
