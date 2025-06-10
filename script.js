@@ -18,7 +18,7 @@ function initializeMap(mapId, centerCoordinates, zoomLevel) {
 // It checks for layer._path (for vector layers) or layer._icon (for markers).
 function fadeOutLayers(layers) {
     layers.forEach(layer => {
-        const el = layer._path || layer._icon;
+        const el = layer._path;
         if (el) {
             el.style.transition = 'opacity 1s';
             el.style.opacity = 0;
@@ -28,93 +28,24 @@ function fadeOutLayers(layers) {
 
 // Helper function: fades in layers over 1 second.
 function fadeInLayers(layers) {
-    // This console log helps confirm that the function is called with the expected layers.
-    console.log('fadeInLayers called with:', layers);
-
-    // This is an inner helper function. It's defined inside fadeInLayers
-    // so it can be reused for each individual feature layer that needs to be faded in.
-    // 'featureLayer' is an individual Leaflet layer (like a polyline for a single GeoJSON feature).
-    // 'logPrefix' is just a string to make console messages clearer by indicating which layer/feature is being processed.
-    const applyFadeToElement = (featureLayer, logPrefix = '') => {
-        // Leaflet layers that represent visual elements on the map usually have
-        // a direct reference to their underlying DOM element.
-        // For vector layers (like lines and polygons from GeoJSON), this is typically '_path'.
-        // For markers, this is typically '_icon'.
-        const el = featureLayer._path || featureLayer._icon;
-        console.log(`${logPrefix}Sub-Layer:`, featureLayer, 'Element:', el);
-
-        // Check if we successfully got a DOM element.
+    const applyFadeToElement = (featureLayer) => {
+        const el = featureLayer._path;
         if (el) {
-            // Log the element's inline style before we make changes.
-            // JSON.parse(JSON.stringify(el.style)) is a way to get a clean copy of the style object for logging.
-            console.log(`${logPrefix}Initial style:`, JSON.parse(JSON.stringify(el.style)));
-
-            // 1. Explicitly set the element's CSS 'opacity' style to 0.
-            // This is the starting point for our fade-in animation.
-            // We're directly manipulating the CSS 'style' property of the DOM element.
             el.style.opacity = 0;
-            console.log(`${logPrefix}After setting opacity to 0:`, el.style.opacity);
-
-            // 2. Define the CSS 'transition' property on the element.
-            // This tells the browser how to animate changes to certain CSS properties.
-            // 'opacity 1s ease-in-out' means:
-            //   - Animate the 'opacity' property.
-            //   - The animation should last for 1 second.
-            //   - 'ease-in-out' is a timing function that makes the animation
-            //     start and end smoothly.
             el.style.transition = 'opacity 1s ease-in-out';
-            console.log(`${logPrefix}After setting transition:`, el.style.transition);
-
-            // 3. Defer setting opacity to 1 using 'requestAnimationFrame'.
-            // 'requestAnimationFrame' asks the browser to run a function just before the next repaint.
-            // This ensures the browser has a chance to apply the opacity: 0 and the transition rule
-            // before we ask it to animate to opacity: 1.
             requestAnimationFrame(() => {
-                console.log(`${logPrefix}In rAF, setting opacity to 1. Current opacity:`, el.style.opacity);
-                // Now, change the opacity to 1. Because a transition is defined for 'opacity',
-                // the browser will animate this change from 0 to 1 over 1 second.
                 el.style.opacity = 1;
-                console.log(`${logPrefix}After setting opacity to 1 in rAF:`, el.style.opacity);
             });
-        } else {
-            // If 'el' is null or undefined, it means we couldn't find the DOM element
-            // for this Leaflet layer, so we can't animate it.
-            console.log(`${logPrefix}No element (_path or _icon) found for this sub-layer.`);
         }
     };
 
-    // The 'layers' argument is an array of top-level Leaflet layers
-    // (e.g., [staticLayer1, staticLayer2, ...]).
-    layers.forEach((layer, groupIndex) => {
-        console.log(`Processing Group/Layer ${groupIndex}:`, layer);
-
-        // Check if the current 'layer' is a Leaflet LayerGroup (like L.GeoJSON).
-        // LayerGroups can contain multiple individual feature layers.
-        // The 'eachLayer' method is a way to iterate over these child layers.
-        if (typeof layer.eachLayer === 'function') {
-            // 'layer.eachLayer' calls the provided function for each individual layer
-            // (e.g., each polyline) within the GeoJSON group.
-            // The callback function receives the 'featureLayer' (the child layer).
-            // It does NOT provide an index for this child layer.
-            let featureCounter = 0; // We can create our own counter for logging if needed.
-            layer.eachLayer((featureLayer) => {
-                // Create a descriptive prefix for logging, using the groupIndex and our manual featureCounter.
-                const logPrefix = `  Group ${groupIndex}, Feature ${featureCounter} - `;
-                applyFadeToElement(featureLayer, logPrefix);
-                featureCounter++; // Increment for the next feature in this group.
-            });
-        } else {
-            // If 'layer' is not a group (e.g., it's a single L.Marker or L.Polyline
-            // that wasn't part of a GeoJSON group), we apply the fade effect directly to it.
-            const logPrefix = `  Layer ${groupIndex} - `;
-            applyFadeToElement(layer, logPrefix);
-        }
-    });
+    layers.forEach((layer) => {
+        layer.eachLayer((featureLayer) => {
+            applyFadeToElement(featureLayer);
+        });
+    })
 }
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 // Main function to set up the map and layers.
 async function setupMap() {
@@ -125,8 +56,6 @@ async function setupMap() {
     // Once the animation finishes, fade it out.
     fadeOutLayers(animatedLayers);
 
-    // Wait for 2 seconds before adding static layers.
-    await sleep(2000);
 
     // Create static GeoJSON line layers without adding them to the map.
     const staticLayer1 = await createGeoJsonLineLayer('assets/lines/public_transport.geojson', LineStyles.publicTransport);
