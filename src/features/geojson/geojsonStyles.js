@@ -31,21 +31,21 @@ export const LineStyles = {
   publicTransport: {
     color: "#6A0DAD",
     weight: 1.5,
-    opacity: 0.6,
+    opacity: 0.9,
   },
   cycling: {
     color: "#FFD700",
     weight: 1.5,
-    opacity: 0.7
+    opacity: 0.9
   },
   walking: {
     color: "#F04E30",
     weight: 1,
-    opacity: 0.7,
+    opacity: 0.9,
   },
   ferry: {
     color: "#FFFFFF",
     weight: 2,
-    opacity: 0.7,
+    opacity: 0.9,
   }
 };

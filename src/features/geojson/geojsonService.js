@@ -57,27 +57,6 @@ export async function addGeoJsonPointLayer(map, filePath, onEachFeatureCallback,
     }
 }
 
-// NEW function to load and add STATIC GeoJSON LineString/MultiLineString layers
-export async function addGeoJsonLineLayer(map, filePath, styleOptions, onEachFeatureCallback) {
-    try {
-        const geojsonData = await fetchGeoJson(filePath);
-
-        const layerOptions = {};
-        if (styleOptions) {
-            layerOptions.style = styleOptions;
-        }
-        if (onEachFeatureCallback) {
-            layerOptions.onEachFeature = onEachFeatureCallback;
-        }
-        const layer = L.geoJSON(geojsonData, layerOptions).addTo(map);
-        return layer; // Return the created layer
-
-    } catch (error) {
-        // Catch any unexpected errors during the L.geoJSON processing or other parts
-        console.error('Error processing Static Line GeoJSON:', filePath, error);
-        throw error; // Re-throw the error
-    }
-}
 
 /**
  * Animate features in a chained sequence using motion speed.
@@ -141,4 +120,24 @@ export async function animateChainedGeoJson(
     throw new Error('No initial feature with Name "Initial Haneda" found.');
   }
   await play(initialFeature);
+}
+
+/**
+ * Creates a GeoJSON line layer using the provided file path and style,
+ * but does not add it to the map.
+ *
+ * @param {string} filePath - URL/path to the GeoJSON file.
+ * @param {object} style - Styling options for the layer.
+ * @returns {Promise<Layer>} - A promise resolving to the created GeoJSON layer.
+ */
+export async function createGeoJsonLineLayer(filePath, style) {
+    // Fetch the GeoJSON data.
+    const response = await fetch(filePath);
+    const geojson = await response.json();
+    // Create the layer using Leaflet's geoJSON factory.
+    const layer = L.geoJSON(geojson, {
+        style: style
+    });
+    // Return the layer (do not add it to any map yet).
+    return layer;
 }

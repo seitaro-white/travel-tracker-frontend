@@ -1,5 +1,5 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
-import { createGeoJsonLineLayer } from './src/features/geojson/geojsonService.js';
+import { createGeoJsonLineLayer, addGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/photos/photoViewer.js';
 
@@ -84,12 +84,12 @@ async function setupMap() {
         }
     ];
 
-    //for (const layerConfig of pointLayersConfig) {
-    //    if (layerConfig.type === 'point') {
-    //        const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
-    //        await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
-    //    }
-    //}
+    for (const layerConfig of pointLayersConfig) {
+        if (layerConfig.type === 'point') {
+            const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
+            await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
+        }
+    }
 
     // Example marker for Kyoto.
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
