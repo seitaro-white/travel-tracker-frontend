@@ -1,7 +1,7 @@
 import { AnimatedLineStyles } from './geojson_styles.js';
 
 // Function to fetch GeoJSON data
-async function fetchGeoJson(filePath) {
+export async function fetchGeoJson(filePath) {
     const response = await fetch(filePath);
     if (!response.ok) {
         throw new Error(`Network response was not ok for ${filePath}: ${response.statusText}`);

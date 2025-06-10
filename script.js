@@ -1,12 +1,10 @@
 import { LineStyles, AnimatedLineStyles } from './src/services/geojson_styles.js';
-import { animateChainedGeoJson, addGeoJsonLineLayer, addGeoJsonPointLayer } from './src/services/geojson.js';
+import { addGeoJsonLineLayer, addGeoJsonPointLayer } from './src/services/geojson.js';
+import { animateChainedGeoJson } from './src/services/animationService.js';
 
 // Function to initialize the map
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
-    const map = L.map(
-        mapId, {
-
-    }).setView(centerCoordinates, zoomLevel);
+    const map = L.map(mapId).setView(centerCoordinates, zoomLevel);
     L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.{ext}', {
         maxZoom: 20,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -148,46 +146,40 @@ function hideAnimatedPolaroidOnClick() {
 async function setupMap() {
   const map = initializeMap('map', [36.2048, 138.2529], 7);
 
-  // use AnimatedLineStyles for the chained animation
+  // Start the chained line animation using the separated animation service.
   await animateChainedGeoJson(
     map,
-    'assets/lines/animation_tracks.geojson',
-    AnimatedLineStyles
+    'assets/lines/animation_tracks.geojson'
   );
 
-  // use LineStyles for your static layers
+  // Add various static GeoJSON line layers.
   await addGeoJsonLineLayer(map, 'assets/lines/public_transport.geojson', LineStyles.publicTransport);
   await addGeoJsonLineLayer(map, 'assets/lines/walking_routes.geojson',      LineStyles.walking);
   await addGeoJsonLineLayer(map, 'assets/lines/cycling_routes.geojson',      LineStyles.cycling);
   await addGeoJsonLineLayer(map, 'assets/lines/ferries.geojson',             LineStyles.ferry);
 
-  // Configuration for point layers
-    const pointLayersConfig = [
-        {
-            type: 'point',
-            filePath: 'assets/points/geotagged_photos.geojson',
-            onEachFeature: onEachPhotoFeature,
-            pointToLayer: pointToLayerForPhotos,
-            staggerDelay: 1 // Added: Delay in ms for staggering marker appearance
-        }
-        // Add other point layer configurations here if needed
-    ];
+  // Configuration for and loading of point layers.
+  const pointLayersConfig = [
+      {
+          type: 'point',
+          filePath: 'assets/points/geotagged_photos.geojson',
+          onEachFeature: onEachPhotoFeature,
+          pointToLayer: pointToLayerForPhotos,
+          staggerDelay: 1
+      }
+  ];
 
-    // Load all point layers after all line animations are initiated
-    for (const layerConfig of pointLayersConfig) {
-        if (layerConfig.type === 'point') {
-            // Use the configured staggerDelay, or a default if not specified (though addGeoJsonPointLayer also has a default)
-            const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
-            await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
-        }
-    }
+  for (const layerConfig of pointLayersConfig) {
+      if (layerConfig.type === 'point') {
+          const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
+          await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
+      }
+  }
 
-    // Example: Add a marker for Kyoto
-    const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
-    kyotoMarker.bindPopup("<b>Kyoto</b><br>Historic former capital.");
-
-    // You can add more markers, tracklines, photo popups etc. here
+  // Example marker for Kyoto.
+  const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
+  kyotoMarker.bindPopup("<b>Kyoto</b><br>Historic former capital.");
 }
 
-// Wait for the DOM to be fully loaded before running map logic
+// Wait for the DOM to be fully loaded before running map logic.
 document.addEventListener('DOMContentLoaded', setupMap);
