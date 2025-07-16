@@ -6,6 +6,13 @@ body {
     background-color: #f4f4f4; /* A light background */
 }
 
+/* Make the html and body take up the full viewport */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 /* Page title styling */
 h1 {
     text-align: center;
@@ -14,11 +21,11 @@ h1 {
 
 /* Set the size and appearance of the div that contains the map */
 #map {
-    height: 800px; /* You can adjust this */
-    width: 90%;    /* Example: 80% of the page width */
-    margin: 20px auto; /* Center the map container */
-    border: 2px solid #aaa;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: a subtle shadow */
+    height: 100vh;   /* 100% of the viewport height */
+    width: 100vw;    /* 100% of the viewport width */
+    margin: 0;
+    border: none;
+    box-shadow: none;
 }
 
 
