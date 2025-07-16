@@ -17,7 +17,7 @@ export function showAnimatedPolaroid(feature) {
 
     // Construct the image path and caption from the feature
     const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
-    const captionText = feature.properties.filename || feature.properties.filepath.split('/').pop() || "Photo";
+    const captionText = feature.properties.description || ""
 
     // Create the overlay element
     const wrapper = document.createElement('div');
