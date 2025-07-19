@@ -31,17 +31,19 @@ export async function addClusteredGeoJsonPointLayer(map, filePath, onEachFeature
         const childMarkers = cluster.getAllChildMarkers();
         // Get the HTML of the icon for the first marker in the cluster.
         // This gives us the <img> tag for the photo.
-        const firstMarkerIconHtml = childMarkers[0].options.icon.options.html;
+        // Get the HTML for the first, second, and third marker icons if they exist.
+        const firstMarkerIconHtml = childMarkers[0]?.options.icon.options.html || '';
+        const secondMarkerIconHtml = childMarkers[1]?.options.icon.options.html || '';
+        // If there is no third marker, this will be an empty string.
+        const thirdMarkerIconHtml = childMarkers[2]?.options.icon.options.html || '';
 
         // This is the HTML for our custom "stacked" icon.
-        // It consists of three divs. The top one (`stack-item-1`) will contain
-        // the actual photo from the first marker. The other two are just for
-        // creating the visual effect of a stack.
+        // If there are fewer than three markers, the corresponding div(s) will be empty.
         const clusterHtml = `
             <div class="custom-cluster-stack">
-                <div class="stack-item stack-item-3"></div>
-                <div class="stack-item stack-item-2"></div>
-                <div class="stack-item stack-item-1">${firstMarkerIconHtml}</div>
+            <div class="stack-item stack-item-3">${thirdMarkerIconHtml}</div>
+            <div class="stack-item stack-item-2">${secondMarkerIconHtml}</div>
+            <div class="stack-item stack-item-1">${firstMarkerIconHtml}</div>
             </div>
         `;
 
