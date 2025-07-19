@@ -27,7 +27,10 @@ export async function fetchGeoJson(filePath) {
 export async function addClusteredGeoJsonPointLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
     // Create a new marker cluster group.
     // See https://github.com/Leaflet/Leaflet.markercluster for options.
-    const markers = L.markerClusterGroup();
+    const markers = L.markerClusterGroup(
+        {showCoverageOnHover: false,
+        maxClusterRadius: 20}
+        );
 
     // Fetch the GeoJSON data.
     const geojsonData = await fetchGeoJson(filePath);
