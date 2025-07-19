@@ -15,44 +15,33 @@ export async function fetchGeoJson(filePath) {
 
 
 
-export async function addGeoJsonPointLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) { // Added staggerMs with a default value
-    const addedLayers = []; // Array to store added layers
-    try {
-        const geojsonData = await fetchGeoJson(filePath);
 
-        const layerOptions = {};
-        if (onEachFeatureCallback) {
-            layerOptions.onEachFeature = onEachFeatureCallback;
-        }
-        if (pointToLayerCallback) {
-            layerOptions.pointToLayer = pointToLayerCallback;
-        }
+// Adds all GeoJSON points to the map at once, without staggering.
+// - map: Leaflet map instance
+// - filePath: path to the GeoJSON file
+// - onEachFeatureCallback: function to run on each feature
+// - pointToLayerCallback: function to create a layer for each point
+export async function createGeoJsonPointLayer(filePath, onEachFeatureCallback, pointToLayerCallback) {
+    // Fetch the GeoJSON data from the provided file path
+    const geojsonData = await fetchGeoJson(filePath);
 
-        if (geojsonData && geojsonData.features) {
-            for (const feature of geojsonData.features) {
-                // Create a GeoJSON object for the single feature to process it individually
-                const singleFeatureGeoJson = {
-                    type: "FeatureCollection",
-                    features: [feature]
-                };
-                const layer = L.geoJSON(singleFeatureGeoJson, layerOptions).addTo(map);
-                addedLayers.push(layer); // Add the created layer to our array
-
-            }
-        } else {
-            // Fallback if geojsonData.features is not available or empty
-            console.warn(`No features found or invalid GeoJSON structure in ${filePath}. Attempting to add layer directly.`);
-            const layer = L.geoJSON(geojsonData, layerOptions).addTo(map);
-            addedLayers.push(layer); // Add the created layer
-        }
-        return addedLayers; // Return the array of added layers
-
-    } catch (error) {
-        // Catch any unexpected errors during the L.geoJSON processing or other parts
-        console.error('Error processing Point GeoJSON:', filePath, error);
-        throw error; // Re-throw the error
+    // Set up options for the GeoJSON layer
+    const layerOptions = {};
+    if (onEachFeatureCallback) {
+        layerOptions.onEachFeature = onEachFeatureCallback;
     }
+    if (pointToLayerCallback) {
+        layerOptions.pointToLayer = pointToLayerCallback;
+    }
+
+    // Create the GeoJSON layer and add it to the map
+    const layer = L.geoJSON(geojsonData, layerOptions)
+
+    // Return the created layer in an array (for consistency with previous API)
+    return layer;
 }
+
+
 
 
 /**
