@@ -86,19 +86,12 @@ async function setupMap() {
         }
     ];
 
-    for (const layerConfig of pointLayersConfig) {
-        // Check if the layer should be clustered
-        if (layerConfig.cluster) {
-            // If so, call the new function to create a clustered layer
-            await addClusteredGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
-        }
-        // Note: The old non-clustered logic has been removed for simplicity,
-        // as the goal is to use clustering for the photos.
-    }
+    const photosPointLayer = await addClusteredGeoJsonPointLayer(
+        'assets/points/geotagged_photos.geojson',
+        onEachPhotoFeature,
+        pointToLayerForPhotos);
 
-
-
-
+    photosPointLayer.addTo(map);
 
 
     // Example marker for Kyoto.
