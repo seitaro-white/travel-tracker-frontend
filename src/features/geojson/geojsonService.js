@@ -25,12 +25,45 @@ export async function fetchGeoJson(filePath) {
  * @returns {Promise<L.MarkerClusterGroup>} - A promise that resolves with the marker cluster group.
  */
 export async function addClusteredGeoJsonPointLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
+    // This function will be used to create the custom icon for each cluster.
+    const createClusterIcon = function (cluster) {
+        // Get all markers in the cluster.
+        const childMarkers = cluster.getAllChildMarkers();
+        // Get the HTML of the icon for the first marker in the cluster.
+        // This gives us the <img> tag for the photo.
+        const firstMarkerIconHtml = childMarkers[0].options.icon.options.html;
+
+        // This is the HTML for our custom "stacked" icon.
+        // It consists of three divs. The top one (`stack-item-1`) will contain
+        // the actual photo from the first marker. The other two are just for
+        // creating the visual effect of a stack.
+        const clusterHtml = `
+            <div class="custom-cluster-stack">
+                <div class="stack-item stack-item-3"></div>
+                <div class="stack-item stack-item-2"></div>
+                <div class="stack-item stack-item-1">${firstMarkerIconHtml}</div>
+            </div>
+        `;
+
+        // We create a new Leaflet DivIcon using our custom HTML.
+        // The className is empty so we don't get any default Leaflet styling.
+        return L.divIcon({
+            html: clusterHtml,
+            className: '',
+            // The size of the icon needs to be large enough to contain the stack.
+            iconSize: [30, 30],
+            // The anchor should be the center of the icon.
+            iconAnchor: [15, 15]
+        });
+    }
+
     // Create a new marker cluster group.
-    // See https://github.com/Leaflet/Leaflet.markercluster for options.
-    const markers = L.markerClusterGroup(
-        {showCoverageOnHover: false,
-        maxClusterRadius: 20}
-        );
+    // We pass our custom iconCreateFunction in the options.
+    const markers = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 20,
+        iconCreateFunction: createClusterIcon // Here is our custom function
+    });
 
     // Fetch the GeoJSON data.
     const geojsonData = await fetchGeoJson(filePath);
