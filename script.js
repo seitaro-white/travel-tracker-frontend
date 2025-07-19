@@ -1,5 +1,6 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
-import { createGeoJsonLineLayer, addGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
+// Import the new function from geojsonService.js
+import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/photos/photoViewer.js';
 
@@ -80,15 +81,19 @@ async function setupMap() {
             filePath: 'assets/points/geotagged_photos.geojson',
             onEachFeature: onEachPhotoFeature,
             pointToLayer: pointToLayerForPhotos,
-            staggerDelay: 1
+            // We will use the new clustered function for this layer
+            cluster: true
         }
     ];
 
     for (const layerConfig of pointLayersConfig) {
-        if (layerConfig.type === 'point') {
-            const staggerMilliseconds = layerConfig.staggerDelay !== undefined ? layerConfig.staggerDelay : 50;
-            await addGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer, staggerMilliseconds);
+        // Check if the layer should be clustered
+        if (layerConfig.cluster) {
+            // If so, call the new function to create a clustered layer
+            await addClusteredGeoJsonPointLayer(map, layerConfig.filePath, layerConfig.onEachFeature, layerConfig.pointToLayer);
         }
+        // Note: The old non-clustered logic has been removed for simplicity,
+        // as the goal is to use clustering for the photos.
     }
 
     // Example marker for Kyoto.
