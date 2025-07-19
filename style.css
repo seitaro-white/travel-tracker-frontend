@@ -39,6 +39,7 @@ h1 {
     border: 1.5px solid whitesmoke; /* Default border */
     box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
     transform: scale(1); /* Default scale */
+    z-index: 100; /* This should put it above info-icons */
     /* Apply transition to transform and border properties */
     transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
 }
