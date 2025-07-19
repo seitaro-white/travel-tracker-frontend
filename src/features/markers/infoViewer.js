@@ -13,7 +13,7 @@ export function showInfoOverlay(feature) {
     }
 
 
-    const description = feature.properties.description || "No description available.";
+    const description = feature.properties.Description || "No description available.";
 
     // Create the main wrapper for the overlay.
     const wrapper = document.createElement('div');
@@ -81,13 +81,6 @@ export function onEachInfoFeature(feature, layer) {
         showInfoOverlay(feature);
     });
 
-    // On mouseover, add a class to the icon to make it larger.
-    layer.on('mouseover', function() {
-        const iconDiv = this._icon;
-        if (iconDiv) {
-            iconDiv.classList.add('info-marker-icon-hover');
-        }
-    });
 
     // On mouseout, remove the hover class to return the icon to its normal size.
     layer.on('mouseout', function() {
@@ -119,4 +112,5 @@ export function pointToLayerForInfo(feature, latlng) {
     });
 
     // Return a new marker at the given position with our custom icon.
-    return L.marker(latlng, { icon:
+    return L.marker(latlng, { icon: customIcon });
+}

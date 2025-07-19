@@ -210,8 +210,8 @@ h1 {
 
 /* This is the base style for the 'i' marker icon. */
 .info-marker-icon {
-    background-color: #4a90e2; /* A nice blue background */
-    color: white;
+    background-color: transparent; /* Transparent background */
+    color: #4b4b4b; /* Make the 'i' the same grey as the border */
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -223,18 +223,16 @@ h1 {
     font-size: 16px;
     line-height: 24px; /* Vertically center the 'i' */
     text-align: center;
-    border: 2px solid whitesmoke;
+    border: 3px solid #4b4b4b;
     box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
     cursor: pointer;
     transform: scale(1); /* Default scale */
     transition: transform 0.2s ease-in-out; /* Animate the scaling on hover */
 }
 
-/* This class is added on hover to make the icon larger. */
-.info-marker-icon-hover {
-    transform: scale(1.5); /* Enlarge the icon */
+.info-marker-icon:hover {
+    transform: scale(1.5); /* Enlarge the icon on hover */
 }
-
 
 /* --- New styles for the info overlay --- */
 
