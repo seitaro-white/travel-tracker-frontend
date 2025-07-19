@@ -1,8 +1,9 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
 // Import the new function from geojsonService.js
-import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
+import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
+import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
 
 // Function to initialize the map.
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
@@ -73,19 +74,7 @@ async function setupMap() {
     // Trigger their fade-in.
     fadeInLayers([staticLayer1, staticLayer2, staticLayer3, staticLayer4]);
 
-
-    // Configuration and loading of point layers.
-    const pointLayersConfig = [
-        {
-            type: 'point',
-            filePath: 'assets/points/geotagged_photos.geojson',
-            onEachFeature: onEachPhotoFeature,
-            pointToLayer: pointToLayerForPhotos,
-            // We will use the new clustered function for this layer
-            cluster: true
-        }
-    ];
-
+    // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
         'assets/points/geotagged_photos.geojson',
         onEachPhotoFeature,
@@ -93,6 +82,14 @@ async function setupMap() {
 
     photosPointLayer.addTo(map);
 
+    // Add info layers
+    const infoPointLayer = await createGeoJsonPointLayer(
+        'assets/lines/information.geojson',
+        onEachInfoFeature,
+        pointToLayerForInfo
+        );
+
+    infoPointLayer.addTo(map);
 
     // Example marker for Kyoto.
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
