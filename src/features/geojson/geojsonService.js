@@ -57,6 +57,47 @@ export async function addGeoJsonPointLayer(map, filePath, onEachFeatureCallback,
     }
 }
 
+/**
+ * Adds a clustered GeoJSON point layer to the map.
+ * This function fetches GeoJSON data and adds the points to a MarkerClusterGroup.
+ *
+ * @param {L.Map} map - The Leaflet map instance.
+ * @param {string} filePath - The path to the GeoJSON file.
+ * @param {Function} onEachFeatureCallback - Callback for each feature.
+ * @param {Function} pointToLayerCallback - Callback to create a layer for each point.
+ * @returns {Promise<L.MarkerClusterGroup>} - A promise that resolves with the marker cluster group.
+ */
+export async function addClusteredGeoJsonPointLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) {
+    // Create a new marker cluster group.
+    // See https://github.com/Leaflet/Leaflet.markercluster for options.
+    const markers = L.markerClusterGroup();
+
+    // Fetch the GeoJSON data.
+    const geojsonData = await fetchGeoJson(filePath);
+
+    // Define the options for the GeoJSON layer, including callbacks.
+    const layerOptions = {};
+    if (onEachFeatureCallback) {
+        layerOptions.onEachFeature = onEachFeatureCallback;
+    }
+    if (pointToLayerCallback) {
+        layerOptions.pointToLayer = pointToLayerCallback;
+    }
+
+    // Create a GeoJSON layer with the data and options.
+    // This will create markers but not add them to the map yet.
+    const geoJsonLayer = L.geoJSON(geojsonData, layerOptions);
+
+    // Add the markers from the GeoJSON layer to the cluster group.
+    markers.addLayer(geoJsonLayer);
+
+    // Add the cluster group to the map.
+    map.addLayer(markers);
+
+    // Return the created cluster group.
+    return markers;
+}
+
 
 /**
  * Animate features in a chained sequence using motion speed.
