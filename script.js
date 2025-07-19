@@ -2,7 +2,7 @@ import { LineStyles } from './src/features/geojson/geojsonStyles.js';
 // Import the new function from geojsonService.js
 import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
-import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/photos/photoViewer.js';
+import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 
 // Function to initialize the map.
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
@@ -95,6 +95,11 @@ async function setupMap() {
         // Note: The old non-clustered logic has been removed for simplicity,
         // as the goal is to use clustering for the photos.
     }
+
+
+
+
+
 
     // Example marker for Kyoto.
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);

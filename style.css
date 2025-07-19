@@ -205,3 +205,114 @@ h1 {
     left: 0;
     z-index: 1;
 }
+
+/* --- New styles for the info marker icon --- */
+
+/* This is the base style for the 'i' marker icon. */
+.info-marker-icon {
+    background-color: #4a90e2; /* A nice blue background */
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px; /* Vertically center the 'i' */
+    text-align: center;
+    border: 2px solid whitesmoke;
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transform: scale(1); /* Default scale */
+    transition: transform 0.2s ease-in-out; /* Animate the scaling on hover */
+}
+
+/* This class is added on hover to make the icon larger. */
+.info-marker-icon-hover {
+    transform: scale(1.5); /* Enlarge the icon */
+}
+
+
+/* --- New styles for the info overlay --- */
+
+/* This is the full-screen wrapper for the info overlay.
+   It handles the background dimming and positioning. */
+.info-overlay-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Ensure it's above other content */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+    opacity: 0; /* Start fully transparent */
+    pointer-events: none; /* Don't intercept clicks when hidden */
+    transition: opacity 0.3s ease-in-out; /* Fade in/out the background */
+}
+
+/* When the overlay is made visible, it becomes opaque and interactive. */
+.info-overlay-wrapper.visible {
+    opacity: 1;
+    pointer-events: auto; /* Allow clicks on the background to close it */
+}
+
+/* This is the content box inside the overlay. */
+.info-content {
+    background: white;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    max-width: 500px;
+    width: 90%;
+    box-sizing: border-box;
+    transform: scale(0.9); /* Start slightly smaller */
+    opacity: 0;
+    /* Animate the scale and opacity for a pop-in effect. */
+    transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s ease-in-out;
+}
+
+/* When the overlay is visible, the content animates to its final state. */
+.info-overlay-wrapper.visible .info-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Styling for the text inside the info content box. */
+.info-content h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+.info-content p {
+    color: #555;
+    line-height: 1.6;
+    margin: 10px 0 0 0;
+}
+
+/* This style is for the close button inside the info overlay. */
+.info-overlay-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 2100; /* Above the overlay content */
+    /* Optional: Add some padding or margin if needed */
+}
+
+/* Optional: If you want to style the close button icon (e.g., an 'X'), you can add styles here.
+   For example, if using a font icon or SVG:
+   .info-overlay-close i {
+       font-size: 20px;
+       color: #333;
+   }
+*/

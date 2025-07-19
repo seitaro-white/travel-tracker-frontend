@@ -14,6 +14,47 @@ export async function fetchGeoJson(filePath) {
 }
 
 
+
+export async function addGeoJsonPointLayer(map, filePath, onEachFeatureCallback, pointToLayerCallback) { // Added staggerMs with a default value
+    const addedLayers = []; // Array to store added layers
+    try {
+        const geojsonData = await fetchGeoJson(filePath);
+
+        const layerOptions = {};
+        if (onEachFeatureCallback) {
+            layerOptions.onEachFeature = onEachFeatureCallback;
+        }
+        if (pointToLayerCallback) {
+            layerOptions.pointToLayer = pointToLayerCallback;
+        }
+
+        if (geojsonData && geojsonData.features) {
+            for (const feature of geojsonData.features) {
+                // Create a GeoJSON object for the single feature to process it individually
+                const singleFeatureGeoJson = {
+                    type: "FeatureCollection",
+                    features: [feature]
+                };
+                const layer = L.geoJSON(singleFeatureGeoJson, layerOptions).addTo(map);
+                addedLayers.push(layer); // Add the created layer to our array
+
+            }
+        } else {
+            // Fallback if geojsonData.features is not available or empty
+            console.warn(`No features found or invalid GeoJSON structure in ${filePath}. Attempting to add layer directly.`);
+            const layer = L.geoJSON(geojsonData, layerOptions).addTo(map);
+            addedLayers.push(layer); // Add the created layer
+        }
+        return addedLayers; // Return the array of added layers
+
+    } catch (error) {
+        // Catch any unexpected errors during the L.geoJSON processing or other parts
+        console.error('Error processing Point GeoJSON:', filePath, error);
+        throw error; // Re-throw the error
+    }
+}
+
+
 /**
  * Adds a clustered GeoJSON point layer to the map.
  * This function fetches GeoJSON data and adds the points to a MarkerClusterGroup.
