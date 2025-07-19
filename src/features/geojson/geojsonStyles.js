@@ -2,7 +2,7 @@
 export const AnimatedLineStyles = {
   // default style for any line with no special "type"
   default: {
-    color: "#FF4500",
+    color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
     speed: 200000,
@@ -10,7 +10,7 @@ export const AnimatedLineStyles = {
   },
   // style for Shinkansen features
   Shinkansen: {
-    color: "#FF4500",
+    color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
     speed: 400000,
@@ -18,7 +18,7 @@ export const AnimatedLineStyles = {
   },
   // style for LongFerry features
   LongFerry: {
-    color: "#FF4500",
+    color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
     speed: 600000,
@@ -29,22 +29,22 @@ export const AnimatedLineStyles = {
 // Styles used by addGeoJsonLineLayer (static layers)
 export const LineStyles = {
   publicTransport: {
-    color: "#6A0DAD",
-    weight: 1.5,
+    color: "#ff5e00ff",
+    weight: 2,
     opacity: 0.9,
   },
   cycling: {
-    color: "#FFD700",
+    color: "#24afffff",
     weight: 1.5,
     opacity: 0.9
   },
   walking: {
-    color: "#F04E30",
-    weight: 1,
+    color: "#8826ffff",
+    weight: 1.5,
     opacity: 0.9,
   },
   ferry: {
-    color: "#FFFFFF",
+    color: "#ff5e00ff",
     weight: 2,
     opacity: 0.9,
   }
