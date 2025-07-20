@@ -100,17 +100,19 @@ export function onEachInfoFeature(feature, layer) {
  * @returns {L.Marker} A Leaflet marker with a custom 'i' icon.
  */
 export function pointToLayerForInfo(feature, latlng) {
-    // Create the HTML for the custom icon. It's a simple div with the letter 'i'.
-    const iconHtml = `<div class="info-marker-icon">i</div>`;
+  // Create the HTML for the custom icon. It's a simple div with the letter 'i'.
+  const iconHtml = `<div class="info-marker-icon">i</div>`;
 
-    // Use Leaflet's DivIcon to create an icon from our HTML.
-    const customIcon = L.divIcon({
-        html: iconHtml,
-        className: '', // We use our own class on the div, so no extra class is needed here.
-        iconSize: [24, 24], // Size of the icon.
-        iconAnchor: [12, 12] // Anchor point of the icon (center).
-    });
+  // Use Leaflet's DivIcon to create an icon from our HTML.
+  const customIcon = L.divIcon({
+    html: iconHtml,
+    className: '',      // we rely on .info-marker-icon for styling
+  });
 
-    // Return a new marker at the given position with our custom icon.
-    return L.marker(latlng, { icon: customIcon });
+  // By specifying pane: 'shadowPane' (z-index 500), this marker
+  // will always render underneath the default markerPane (600)
+  return L.marker(latlng, {
+    icon: customIcon,
+    pane: 'shadowPane'
+  });
 }
