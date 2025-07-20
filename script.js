@@ -74,6 +74,18 @@ async function setupMap() {
     // Trigger their fade-in.
     fadeInLayers([staticLayer1, staticLayer2, staticLayer3, staticLayer4]);
 
+
+    // Add info layers
+    const infoPointLayer = await createGeoJsonPointLayer(
+        'assets/points/information.geojson',
+        onEachInfoFeature,
+        pointToLayerForInfo
+        );
+
+    infoPointLayer.addTo(map);
+
+
+
     // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
         'assets/points/geotagged_photos.geojson',
@@ -82,14 +94,6 @@ async function setupMap() {
 
     photosPointLayer.addTo(map);
 
-    // Add info layers
-    const infoPointLayer = await createGeoJsonPointLayer(
-        'assets/lines/information.geojson',
-        onEachInfoFeature,
-        pointToLayerForInfo
-        );
-
-    infoPointLayer.addTo(map);
 
     // Example marker for Kyoto.
     const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
