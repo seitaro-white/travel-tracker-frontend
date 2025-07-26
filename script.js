@@ -7,7 +7,7 @@ import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/in
 
 // Function to initialize the map.
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
-    const map = L.map(mapId).setView(centerCoordinates, zoomLevel);
+    const map = L.map(mapId, {}).setView(centerCoordinates, zoomLevel);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.{ext}', {
         maxZoom: 20,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -51,7 +51,7 @@ function fadeInLayers(layers) {
 
 // Main function to set up the map and layers.
 async function setupMap() {
-    const map = initializeMap('map', [36.2048, 138.2529], 7);
+    const map = initializeMap('map', [39.390439, 138.403350], 6);
 
     // Start the chained line animation and get back an array of animated layers.
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
@@ -82,7 +82,36 @@ async function setupMap() {
         pointToLayerForInfo
         );
 
-    infoPointLayer.addTo(map);
+    // Define the minimum zoom level at which the info layer should be visible.
+    const infoLayerMinZoom = 17;
+
+    // This function checks the map's current zoom level and decides whether to show or hide the info layer.
+    const updateInfoLayerVisibility = () => {
+        // Get the current zoom level from the map instance.
+        const currentZoom = map.getZoom();
+
+        // Check if the current zoom is at or above our minimum threshold.
+        if (currentZoom >= infoLayerMinZoom) {
+            // If the layer isn't already on the map, add it.
+            // The map.hasLayer() check prevents errors from adding a layer multiple times.
+            if (!map.hasLayer(infoPointLayer)) {
+                map.addLayer(infoPointLayer);
+            }
+        } else {
+            // If the zoom is below the threshold, remove the layer if it's currently on the map.
+            if (map.hasLayer(infoPointLayer)) {
+                map.removeLayer(infoPointLayer);
+            }
+        }
+    };
+
+    // Listen for the 'zoomend' event on the map. This event fires every time the map finishes a zoom animation.
+    // When it fires, we call our function to update the layer's visibility.
+    map.on('zoomend', updateInfoLayerVisibility);
+
+    // We also call the function once right after setting it up.
+    // This ensures the layer's visibility is correctly set when the map first loads.
+    updateInfoLayerVisibility();
 
 
 
@@ -94,9 +123,8 @@ async function setupMap() {
 
     photosPointLayer.addTo(map);
 
-
     // Example marker for Kyoto.
-    const kyotoMarker = L.marker([35.0116, 135.7681]).addTo(map);
+    const kyotoMarker = L.marker([39.390439, 138.403350]).addTo(map);
     kyotoMarker.bindPopup("<b>Kyoto</b><br>Historic former capital.");
 }
 
