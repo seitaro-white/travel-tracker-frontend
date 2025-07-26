@@ -315,8 +315,17 @@ h1 {
   background: rgba(0,0,0,0.6);
   display: flex; justify-content: center; align-items: center;
   z-index: 3000;
-  transition: opacity 0.3s;
+  opacity: 0; /* Start hidden */
+  pointer-events: none; /* Prevent interaction when hidden */
+  transition: opacity 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.02);
 }
+
+/* Add this for the fade-in effect */
+.overlay-panel-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .overlay-panel-panel {
   background: #fff;
   border-radius: 12px;
@@ -327,7 +336,17 @@ h1 {
   overflow-y: auto;
   font-size: 1.1em;
   line-height: 1.6;
+  opacity: 0;
+  transform: scale(0.96);
+  transition: opacity 0.3s 0.1s, transform 0.3s 0.1s;
 }
+
+/* Fade and scale in the panel when overlay is visible */
+.overlay-panel-overlay.visible .overlay-panel-panel {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .overlay-panel-close {
   display: block;
   margin: 24px auto 0 auto;
