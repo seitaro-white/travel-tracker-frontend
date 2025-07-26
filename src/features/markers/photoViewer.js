@@ -16,7 +16,7 @@ export function showAnimatedPolaroid(feature) {
     }
 
     // Construct the image path and caption from the feature
-    const imagePath = `assets/geotagged_photos/display/${feature.properties.filepath}`;
+    const imagePath = `assets/photos/display/${feature.properties.filename}.jpg`;
     const captionText = feature.properties.description || ""
 
     // Create the overlay element
@@ -83,7 +83,7 @@ export function hideAnimatedPolaroidOnClick() {
 // Callback function to attach events for photo features in the GeoJSON layer.
 export function onEachPhotoFeature(feature, layer) {
     // If the feature has a valid photo filepath, attach a click event that shows the polaroid.
-    if (feature.properties && feature.properties.filepath) {
+    if (feature.properties && feature.properties.filename) {
         layer.on('click', function () {
             showAnimatedPolaroid(feature);
         });
@@ -113,8 +113,8 @@ export function onEachPhotoFeature(feature, layer) {
 
 // Callback function to create a custom marker for photo features.
 export function pointToLayerForPhotos(feature, latlng) {
-    if (feature.properties && feature.properties.filepath) {
-        const imagePath = `assets/geotagged_photos/thumbnail/${feature.properties.filepath}`;
+    if (feature.properties && feature.properties.filename) {
+        const imagePath = `assets/photos/thumbnail/${feature.properties.filename}.jpg`;
         const iconHtml = `<img src="${imagePath}" alt="Photo location" class="photo-marker-image">`;
         const customIcon = L.divIcon({
             html: iconHtml,
