@@ -241,3 +241,48 @@ export function manageLayerVisibilityByZoom(map, layer, minZoom) {
     // This ensures the layer's visibility is correctly set when the map first loads.
     updateVisibility();
 }
+
+/**
+ * Animates a marker (e.g., a plane) along a line from a GeoJSON file.
+ * The line itself is invisible; only the marker moves.
+ * Returns a promise that resolves when the animation finishes.
+ *
+ * @param {L.Map} map - The Leaflet map instance.
+ * @param {string} filePath - Path to the GeoJSON file (should contain a single LineString).
+ * @param {L.DivIcon|L.Icon} [icon] - Optional custom icon for the marker.
+ * @param {number} [speed=600000] - Animation speed (meters per hour).
+ * @param {string} [easing="easeInOutQuad"] - Animation easing function.
+ * @returns {Promise<void>}
+ */
+export async function animateMarkerAlongLine(map, filePath, icon, speed = 600000, easing = "easeInOutQuad") {
+    // Fetch the GeoJSON data
+    const geojson = await fetchGeoJson(filePath);
+    const feature = geojson.features[0];
+
+    // Use a FontAwesome plane icon that can be rotated by leaflet.motion
+    const markerIcon = icon || L.divIcon({
+        html: `<i class="fa fa-plane fa-2x" aria-hidden="true" motion-base="-48"></i>`,
+        className: "",
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+
+    // Convert coordinates to [lat, lng]
+    const coords = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+
+    // Create the motion polyline with invisible style and easing
+    const layer = L.motion.polyline(
+        coords,
+        { color: "#000", opacity: 0, weight: 2 }, // invisible line
+        { auto: true, speed: speed, easing: L.Motion.Ease.easeInOutQuart }, // add easing here
+        { icon: markerIcon }
+    ).addTo(map);
+
+    // Return a promise that resolves when the animation ends
+    return new Promise(resolve => {
+        layer.once(L.Motion.Event.Ended, () => {
+            map.removeLayer(layer);
+            resolve();
+        });
+    });
+}
