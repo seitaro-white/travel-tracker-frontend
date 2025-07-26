@@ -8,7 +8,7 @@ import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/in
 // Function to initialize the map.
 function initializeMap(mapId, centerCoordinates, zoomLevel) {
     const map = L.map(mapId).setView(centerCoordinates, zoomLevel);
-    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.{ext}', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.{ext}', {
         maxZoom: 20,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         ext: 'png',
@@ -88,7 +88,7 @@ async function setupMap() {
 
     // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
-        'assets/points/geotagged_photos.geojson',
+        'assets/points/photos.geojson',
         onEachPhotoFeature,
         pointToLayerForPhotos);
 
