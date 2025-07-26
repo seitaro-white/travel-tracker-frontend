@@ -5,7 +5,7 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 200000,
+    speed: 400000,
     dashArray: "2, 4"      // default motion speed
   },
   // style for Shinkansen features
@@ -13,7 +13,7 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 400000,
+    speed: 800000,
     dashArray: "4, 6"     // fast speed for Shinkansen
   },
   // style for LongFerry features
@@ -21,8 +21,8 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 600000,
-    dashArray: "5, 10"     // fast speed for ferry
+    speed: 1600000,
+    dashArray: "10, 20"     // fast speed for ferry
   }
 };
 
@@ -31,21 +31,23 @@ export const LineStyles = {
   publicTransport: {
     color: "#ff5e00ff",
     weight: 2,
-    opacity: 0.9,
+    opacity: 0.8,
+    dashArray: "4, 6"
   },
   cycling: {
-    color: "#24afffff",
+    color: "#b100c9ff",
     weight: 1.5,
     opacity: 0.9
   },
   walking: {
-    color: "#8826ffff",
+    color: "#b100c9ff",
     weight: 1.5,
     opacity: 0.9,
   },
   ferry: {
     color: "#ff5e00ff",
-    weight: 2,
-    opacity: 0.9,
+    weight: 2.5,
+    opacity: 0,
+    dashArray: "10, 20"
   }
 };
