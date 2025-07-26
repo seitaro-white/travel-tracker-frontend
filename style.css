@@ -39,7 +39,6 @@ h1 {
     border: 1.5px solid whitesmoke; /* Default border */
     box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
     transform: scale(1); /* Default scale */
-    z-index: 100; /* This should put it above info-icons */
     /* Apply transition to transform and border properties */
     transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
 }
@@ -78,7 +77,6 @@ h1 {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
 */
-
 .polaroid {
   background-color: #fff; /* The "paper" color of the Polaroid */
   border: 1px solid #E0E0E0; /* A very light grey border for the paper edge */
@@ -91,9 +89,7 @@ h1 {
   box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3); /* Adjusted drop shadow */
   transition: box-shadow 0.2s ease-in-out; /* MODIFIED - Kept for hover, transform part was redundant */
 
-  width: 40vw; /* Set width to 40% of viewport width */
-  max-width: 450px;
-  max-height: 80vh;
+
   overflow-y: auto; /* Add scroll if content exceeds max-height */
   box-sizing: border-box; /* Ensures padding and border are included in width/height */
 }
@@ -101,6 +97,8 @@ h1 {
 .polaroid img {
   display: block; /* Removes any extra space below the image if it's inline */
   width: 100%;   /* Makes the image fill the available space *within* the padding */
+  max-width: 80vw; /* Set width to 40% of viewport width */
+  max-height: 80vh;
   height: auto;  /* Maintains aspect ratio */
   object-fit: cover; /* Cover the area, might crop; use 'contain' to show full image */
 }
@@ -214,21 +212,22 @@ h1 {
     background-color: transparent; /* Transparent background */
     color: #4b4b4b; /* Make the 'i' the same grey as the border */
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 24px; /* Vertically center the 'i' */
     text-align: center;
-    border: 3px solid #4b4b4b;
+    border: 2px solid #4b4b4b;
     box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
     cursor: pointer;
     transform: scale(1); /* Default scale */
     transition: transform 0.2s ease-in-out; /* Animate the scaling on hover */
+    z-index: -1;
 }
 
 .info-marker-icon:hover {
@@ -263,6 +262,7 @@ h1 {
 
 /* This is the content box inside the overlay. */
 .info-content {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
     background: white;
     padding: 20px 30px;
     border-radius: 8px;
