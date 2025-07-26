@@ -1,9 +1,10 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
 // Import the new function from geojsonService.js
-import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer, manageLayerVisibilityByZoom  } from './src/features/geojson/geojsonService.js';
+import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer, manageLayerVisibilityByZoom, animateMarkerAlongLine  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
+import { showScrollyPanel } from './src/features/overlays/scrollyPanel.js';
 
 // Function to initialize the map with responsive center/zoom.
 function initializeMap(mapId) {
@@ -62,10 +63,12 @@ function fadeInLayers(layers) {
 
 // Main function to set up the map and layers.
 async function setupMap() {
-    // Remove the old parameters, just pass the mapId.
     const map = initializeMap('map');
 
-    // Start the chained line animation and get back an array of animated layers.
+    // 1. Animate the incoming flight marker first
+    await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson');
+
+    // 2. Now start the main chained animation
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
     // Once the animation finishes, fade it out.
     fadeOutLayers(animatedLayers);
@@ -98,7 +101,15 @@ async function setupMap() {
     // This will show the layer only when the zoom level is 17 or higher.
     manageLayerVisibilityByZoom(map, infoPointLayer, 10);
 
-
+    // After animation finishes:
+    showScrollyPanel(`
+      <h2>Welcome to the Journey!</h2>
+      <p>This interactive map tells the story of my travels across Japan. Scroll down to continue.</p>
+      <p>You'll see animated routes, photos, and more. Enjoy exploring!</p>
+    `, () => {
+      // This callback runs after the panel is closed
+      // Continue with info/photos logic here
+    });
 
     // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
@@ -107,6 +118,7 @@ async function setupMap() {
         pointToLayerForPhotos);
 
     photosPointLayer.addTo(map);
+
 
 }
 
