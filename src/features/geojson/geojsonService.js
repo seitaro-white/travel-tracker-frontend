@@ -91,7 +91,8 @@ export async function addClusteredGeoJsonPointLayer(filePath, onEachFeatureCallb
     // Create a new marker cluster group with our custom iconCreateFunction.
     const markers = L.markerClusterGroup({
         showCoverageOnHover: false,
-        maxClusterRadius: 30,
+        maxClusterRadius: 15,
+        zoomToBoundsOnClick: true,
         iconCreateFunction: createClusterIcon
     });
 
