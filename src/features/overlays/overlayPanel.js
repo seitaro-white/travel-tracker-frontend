@@ -32,6 +32,11 @@ export function showOverlayPanel(contentHtml, onClose) {
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
 
+    // Add the .visible class after the overlay is in the DOM to trigger the fade-in.
+    requestAnimationFrame(() => {
+        overlay.classList.add('visible');
+    });
+
     // Optionally focus the panel for accessibility.
     panel.tabIndex = -1;
     panel.focus();
