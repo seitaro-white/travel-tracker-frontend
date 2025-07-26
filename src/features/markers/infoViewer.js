@@ -80,15 +80,6 @@ export function onEachInfoFeature(feature, layer) {
     layer.on('click', () => {
         showInfoOverlay(feature);
     });
-
-
-    // On mouseout, remove the hover class to return the icon to its normal size.
-    layer.on('mouseout', function() {
-        const iconDiv = this._icon;
-        if (iconDiv) {
-            iconDiv.classList.remove('info-marker-icon-hover');
-        }
-    });
 }
 
 /**
