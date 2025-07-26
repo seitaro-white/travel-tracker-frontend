@@ -100,7 +100,7 @@ h1 {
   max-width: 80vw; /* Set width to 40% of viewport width */
   max-height: 80vh;
   height: auto;  /* Maintains aspect ratio */
-  object-fit: cover; /* Cover the area, might crop; use 'contain' to show full image */
+  object-fit: contain; /* Changed from 'cover'. 'contain' scales the image to fit inside the container without cropping or stretching, maintaining the aspect ratio. */
 }
 
 .polaroid .caption {
