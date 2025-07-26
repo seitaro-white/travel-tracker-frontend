@@ -308,10 +308,34 @@ h1 {
     /* Optional: Add some padding or margin if needed */
 }
 
-/* Optional: If you want to style the close button icon (e.g., an 'X'), you can add styles here.
-   For example, if using a font icon or SVG:
-   .info-overlay-close i {
-       font-size: 20px;
-       color: #333;
-   }
-*/
+/* Scrolly overlay styles */
+.scrolly-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.6);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 3000;
+  transition: opacity 0.3s;
+}
+.scrolly-panel {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  max-width: 500px;
+  max-height: 70vh;
+  padding: 32px 24px;
+  overflow-y: auto;
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+.scrolly-close {
+  display: block;
+  margin: 24px auto 0 auto;
+  padding: 8px 24px;
+  background: #ff5e00;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+}
