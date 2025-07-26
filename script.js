@@ -1,6 +1,6 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
 // Import the new function from geojsonService.js
-import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer  } from './src/features/geojson/geojsonService.js';
+import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer, manageLayerVisibilityByZoom  } from './src/features/geojson/geojsonService.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
@@ -82,36 +82,9 @@ async function setupMap() {
         pointToLayerForInfo
         );
 
-    // Define the minimum zoom level at which the info layer should be visible.
-    const infoLayerMinZoom = 17;
-
-    // This function checks the map's current zoom level and decides whether to show or hide the info layer.
-    const updateInfoLayerVisibility = () => {
-        // Get the current zoom level from the map instance.
-        const currentZoom = map.getZoom();
-
-        // Check if the current zoom is at or above our minimum threshold.
-        if (currentZoom >= infoLayerMinZoom) {
-            // If the layer isn't already on the map, add it.
-            // The map.hasLayer() check prevents errors from adding a layer multiple times.
-            if (!map.hasLayer(infoPointLayer)) {
-                map.addLayer(infoPointLayer);
-            }
-        } else {
-            // If the zoom is below the threshold, remove the layer if it's currently on the map.
-            if (map.hasLayer(infoPointLayer)) {
-                map.removeLayer(infoPointLayer);
-            }
-        }
-    };
-
-    // Listen for the 'zoomend' event on the map. This event fires every time the map finishes a zoom animation.
-    // When it fires, we call our function to update the layer's visibility.
-    map.on('zoomend', updateInfoLayerVisibility);
-
-    // We also call the function once right after setting it up.
-    // This ensures the layer's visibility is correctly set when the map first loads.
-    updateInfoLayerVisibility();
+    // Use the new generic function to manage the info layer's visibility.
+    // This will show the layer only when the zoom level is 17 or higher.
+    manageLayerVisibilityByZoom(map, infoPointLayer, 17);
 
 
 
@@ -123,9 +96,6 @@ async function setupMap() {
 
     photosPointLayer.addTo(map);
 
-    // Example marker for Kyoto.
-    const kyotoMarker = L.marker([39.390439, 138.403350]).addTo(map);
-    kyotoMarker.bindPopup("<b>Kyoto</b><br>Historic former capital.");
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.
