@@ -4,7 +4,7 @@ import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPoi
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
-import { showScrollyPanel } from './src/features/overlays/scrollyPanel.js';
+import { showOverlayPanel } from './src/features/overlays/scrollyPanel.js'; // updated import
 
 // Function to initialize the map with responsive center/zoom.
 function initializeMap(mapId) {
@@ -102,7 +102,7 @@ async function setupMap() {
     manageLayerVisibilityByZoom(map, infoPointLayer, 10);
 
     // After animation finishes:
-    showScrollyPanel(`
+    showOverlayPanel(`
       <h2>Welcome to the Journey!</h2>
       <p>This interactive map tells the story of my travels across Japan. Scroll down to continue.</p>
       <p>You'll see animated routes, photos, and more. Enjoy exploring!</p>
