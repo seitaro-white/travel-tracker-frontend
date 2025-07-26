@@ -5,9 +5,20 @@ import { animateChainedGeoJson } from './src/features/animations/animateChainedF
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
 
-// Function to initialize the map.
-function initializeMap(mapId, centerCoordinates, zoomLevel) {
-    const map = L.map(mapId, {}).setView(centerCoordinates, zoomLevel);
+// Function to initialize the map with responsive center/zoom.
+function initializeMap(mapId) {
+    // Choose settings based on viewport width.
+    // You can adjust the breakpoints and values as needed.
+    // Ok these turned out to be the same lol after testing I found that was best
+    let center, zoom;
+    if (window.innerWidth < 700) { // Treat as mobile if width < 700px
+        center = [39.39, 138.40]; // Example: focus more on Tokyo for mobile
+        zoom = 6;
+    } else {
+        center = [39.39, 138.40]; // Original center for desktop
+        zoom = 6;
+    }
+    const map = L.map(mapId, {}).setView(center, zoom);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.{ext}', {
         maxZoom: 20,
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -51,7 +62,8 @@ function fadeInLayers(layers) {
 
 // Main function to set up the map and layers.
 async function setupMap() {
-    const map = initializeMap('map', [39.390439, 138.403350], 6);
+    // Remove the old parameters, just pass the mapId.
+    const map = initializeMap('map');
 
     // Start the chained line animation and get back an array of animated layers.
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
@@ -84,7 +96,7 @@ async function setupMap() {
 
     // Use the new generic function to manage the info layer's visibility.
     // This will show the layer only when the zoom level is 17 or higher.
-    manageLayerVisibilityByZoom(map, infoPointLayer, 17);
+    manageLayerVisibilityByZoom(map, infoPointLayer, 10);
 
 
 
