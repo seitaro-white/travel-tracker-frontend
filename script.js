@@ -14,7 +14,7 @@ function initializeMap(mapId) {
     let center, zoom;
     if (window.innerWidth < 700) { // Treat as mobile if width < 700px
         center = [39.39, 138.40]; // Example: focus more on Tokyo for mobile
-        zoom = 6;
+        zoom = 5;
     } else {
         center = [39.39, 138.40]; // Original center for desktop
         zoom = 6;
