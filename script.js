@@ -60,13 +60,19 @@ function fadeInLayers(layers) {
     })
 }
 
+// Helper function to fetch HTML content from a file.
+// Returns a Promise that resolves to the HTML string.
+async function fetchHtmlFile(filePath) {
+    const response = await fetch(filePath);
+    return await response.text();
+}
 
 // Main function to set up the map and layers.
 async function setupMap() {
     const map = initializeMap('map');
 
     // 1. Animate the incoming flight marker first
-    await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson');
+    await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
 
     // 2. Now start the main chained animation
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
@@ -101,50 +107,10 @@ async function setupMap() {
     // This will show the layer only when the zoom level is 17 or higher.
     manageLayerVisibilityByZoom(map, infoPointLayer, 10);
 
-    // After animation finishes:
-    showOverlayPanel(`
-      <h2>Welcome to the Journey!</h2>
-      <p>This interactive map tells the story of my travels across Japan. You'll see animated routes, photos, and more. Enjoy exploring!</p>
-
-      <!-- This is the new map key section -->
-      <div class="map-key">
-        <h3>Map Key</h3>
-        <div class="map-key-columns">
-          <!-- Column for line features -->
-          <div class="map-key-column">
-            <div class="key-item">
-              <div class="key-icon">
-                <div class="key-line key-line-transport"></div>
-              </div>
-              <span>Public transport</span>
-            </div>
-            <div class="key-item">
-              <div class="key-icon">
-                <div class="key-line key-line-personal"></div>
-              </div>
-              <span>Walking/Cycling</span>
-            </div>
-          </div>
-          <!-- Column for point features -->
-          <div class="map-key-column">
-            <div class="key-item">
-              <div class="key-icon">
-                <div class="key-photo-marker">
-                  <img src="assets/photos/thumbnail/IMG_0715.jpg" alt="Photo marker" />
-                </div>
-              </div>
-              <span>Photograph</span>
-            </div>
-            <div class="key-item">
-              <div class="key-icon">
-                <div class="info-marker-icon" style="transform: scale(1.2); box-shadow: none;">i</div>
-              </div>
-              <span>Area info</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `, () => {
+    // After animation finishes, show the intro overlay panel.
+    // We fetch the HTML from the new file and pass it to showOverlayPanel.
+    const introHtml = await fetchHtmlFile('introOverlay.html');
+    showOverlayPanel(introHtml, () => {
       // This callback runs after the panel is closed
       // Continue with info/photos logic here
     });
