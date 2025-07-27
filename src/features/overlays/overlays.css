@@ -100,6 +100,15 @@
   opacity: 0;
   transform: scale(0.96);
   transition: opacity 0.3s 0.1s, transform 0.3s 0.1s;
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+/* On very small screens, reduce padding and margin for better fit */
+@media (max-width: 480px) {
+  .overlay-panel-panel {
+    padding: 50px 20px;
+  }
 }
 
 .overlay-panel-overlay.visible .overlay-panel-panel {
