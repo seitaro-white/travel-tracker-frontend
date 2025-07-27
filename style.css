@@ -347,6 +347,74 @@ h1 {
   transform: scale(1);
 }
 
+/* --- New styles for the map key --- */
+.map-key {
+  margin-top: 24px; /* Space above the key */
+  padding-top: 16px; /* Space between the text and the key items */
+  border-top: 1px solid #eee; /* A light separator line */
+}
+
+.map-key h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.key-item {
+  display: flex; /* Align icon and text horizontally */
+  align-items: center; /* Center them vertically */
+  margin-bottom: 10px; /* Space between key items */
+}
+
+.key-icon {
+  width: 30px; /* Fixed width for the icon container */
+  margin-right: 12px; /* Space between icon and text */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-line {
+  width: 100%;
+  height: 3px;
+}
+
+.key-line-transport {
+  /* This creates a dotted line effect */
+  background-image: linear-gradient(to right, #ff9900 50%, transparent 50%);
+  background-size: 8px 3px;
+  background-repeat: repeat-x;
+}
+
+.key-line-personal {
+  background-color: #9933ff; /* A solid purple line */
+}
+
+.key-photo-marker {
+  width: 20px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 50%;
+  border: 1.5px solid whitesmoke;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  overflow: hidden; /* Ensures the image stays within the circle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-photo-marker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensures the image covers the circle */
+  border-radius: 50%;
+  display: block;
+}
+
+/* We can reuse the existing .info-marker-icon style directly in the HTML */
+/* --- End of new styles for the map key --- */
+
 .overlay-panel-close {
   display: block;
   margin: 24px auto 0 auto;
