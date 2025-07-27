@@ -104,8 +104,40 @@ async function setupMap() {
     // After animation finishes:
     showOverlayPanel(`
       <h2>Welcome to the Journey!</h2>
-      <p>This interactive map tells the story of my travels across Japan. Scroll down to continue.</p>
-      <p>You'll see animated routes, photos, and more. Enjoy exploring!</p>
+      <p>This interactive map tells the story of my travels across Japan. You'll see animated routes, photos, and more. Enjoy exploring!</p>
+
+      <!-- This is the new map key section -->
+      <div class="map-key">
+        <h3>Map Key</h3>
+        <div class="key-item">
+          <div class="key-icon">
+            <div class="key-line key-line-transport"></div>
+          </div>
+          <span>Public transport</span>
+        </div>
+        <div class="key-item">
+          <div class="key-icon">
+            <div class="key-line key-line-personal"></div>
+          </div>
+          <span>Walking/Cycling</span>
+        </div>
+        <div class="key-item">
+          <div class="key-icon">
+            <!-- This is a photo marker with an actual photo inside -->
+            <div class="key-photo-marker">
+              <img src="assets/photos/thumbnail/IMG_0715.jpg" alt="Photo marker" />
+            </div>
+          </div>
+          <span>Photograph</span>
+        </div>
+        <div class="key-item">
+          <div class="key-icon">
+            <!-- We can reuse the existing info marker style here -->
+            <div class="info-marker-icon" style="transform: scale(1.2); box-shadow: none;">i</div>
+          </div>
+          <span>Area info</span>
+        </div>
+      </div>
     `, () => {
       // This callback runs after the panel is closed
       // Continue with info/photos logic here
