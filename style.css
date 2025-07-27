@@ -347,6 +347,11 @@ h1 {
   transform: scale(1);
 }
 
+/* Center the main overlay panel header */
+.overlay-panel-panel h2 {
+  text-align: center;
+}
+
 /* --- New styles for the map key --- */
 .map-key {
   margin-top: 24px; /* Space above the key */
@@ -355,6 +360,7 @@ h1 {
 }
 
 .map-key h3 {
+  text-align: center;
   margin-top: 0;
   margin-bottom: 12px;
   font-size: 1.1em;
@@ -425,4 +431,17 @@ h1 {
   border-radius: 6px;
   font-size: 1em;
   cursor: pointer;
+}
+
+.map-key-columns {
+  display: flex;
+  gap: 32px; /* Space between columns */
+  margin-top: 8px;
+  justify-content: center; /* Center the columns horizontally */
+}
+
+.map-key-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }

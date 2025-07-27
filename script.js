@@ -109,33 +109,39 @@ async function setupMap() {
       <!-- This is the new map key section -->
       <div class="map-key">
         <h3>Map Key</h3>
-        <div class="key-item">
-          <div class="key-icon">
-            <div class="key-line key-line-transport"></div>
-          </div>
-          <span>Public transport</span>
-        </div>
-        <div class="key-item">
-          <div class="key-icon">
-            <div class="key-line key-line-personal"></div>
-          </div>
-          <span>Walking/Cycling</span>
-        </div>
-        <div class="key-item">
-          <div class="key-icon">
-            <!-- This is a photo marker with an actual photo inside -->
-            <div class="key-photo-marker">
-              <img src="assets/photos/thumbnail/IMG_0715.jpg" alt="Photo marker" />
+        <div class="map-key-columns">
+          <!-- Column for line features -->
+          <div class="map-key-column">
+            <div class="key-item">
+              <div class="key-icon">
+                <div class="key-line key-line-transport"></div>
+              </div>
+              <span>Public transport</span>
+            </div>
+            <div class="key-item">
+              <div class="key-icon">
+                <div class="key-line key-line-personal"></div>
+              </div>
+              <span>Walking/Cycling</span>
             </div>
           </div>
-          <span>Photograph</span>
-        </div>
-        <div class="key-item">
-          <div class="key-icon">
-            <!-- We can reuse the existing info marker style here -->
-            <div class="info-marker-icon" style="transform: scale(1.2); box-shadow: none;">i</div>
+          <!-- Column for point features -->
+          <div class="map-key-column">
+            <div class="key-item">
+              <div class="key-icon">
+                <div class="key-photo-marker">
+                  <img src="assets/photos/thumbnail/IMG_0715.jpg" alt="Photo marker" />
+                </div>
+              </div>
+              <span>Photograph</span>
+            </div>
+            <div class="key-item">
+              <div class="key-icon">
+                <div class="info-marker-icon" style="transform: scale(1.2); box-shadow: none;">i</div>
+              </div>
+              <span>Area info</span>
+            </div>
           </div>
-          <span>Area info</span>
         </div>
       </div>
     `, () => {
