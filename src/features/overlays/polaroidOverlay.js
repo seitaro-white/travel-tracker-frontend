@@ -32,30 +32,46 @@ export function showAnimatedPolaroid(feature) {
 
     // Create the polaroid element that holds the image and caption.
     const polaroidElement = document.createElement('div');
-    polaroidElement.className = 'polaroid'; // Uses the .polaroid CSS class.
+    polaroidElement.className = 'polaroid';
 
-    // Set the inner HTML for the polaroid element.
-    polaroidElement.innerHTML = `
-        <img src="${imagePath}" alt="Photo">
-        <p class="caption">${captionText}</p>
-    `;
+    // Create the image element and caption.
+    const img = document.createElement('img');
+    img.src = imagePath;
+    img.alt = "Photo";
+
+    const caption = document.createElement('p');
+    caption.className = 'caption';
+    caption.textContent = captionText;
 
     // Prevent clicks on the polaroid itself from closing the overlay.
     polaroidElement.onclick = function (event) {
         event.stopPropagation();
     };
 
+    // Append image and caption to the polaroid element.
+    polaroidElement.appendChild(img);
+    polaroidElement.appendChild(caption);
+
     // Append the polaroid to the overlay and add the overlay to the DOM.
     wrapper.appendChild(polaroidElement);
     document.body.appendChild(wrapper);
 
-    // Trigger the animation by adding the 'visible' class after ensuring the element is in the DOM.
-    // Two consecutive calls to requestAnimationFrame help ensure the CSS transition is applied.
-    requestAnimationFrame(() => {
+    // Wait for the image to load before triggering the animation.
+    img.onload = () => {
+        // Use two requestAnimationFrame calls to ensure the element is in the DOM before animating.
         requestAnimationFrame(() => {
-            wrapper.classList.add('visible');
+            requestAnimationFrame(() => {
+                wrapper.classList.add('visible');
+            });
         });
-    });
+    };
+
+    // If the image fails to load, still show the overlay after a short delay.
+    img.onerror = () => {
+        setTimeout(() => {
+            wrapper.classList.add('visible');
+        }, 100);
+    };
 }
 
 /**
