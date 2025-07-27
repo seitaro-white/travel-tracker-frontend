@@ -47,7 +47,7 @@ export const LineStyles = {
   ferry: {
     color: "#ff5e00ff",
     weight: 2.5,
-    opacity: 0,
+    opacity: 0.9,
     dashArray: "10, 20"
   }
 };
