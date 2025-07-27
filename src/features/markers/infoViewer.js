@@ -1,23 +1,23 @@
 /**
  * Shows an overlay with the information from a feature.
  * This function creates and displays a DOM element containing the
- * feature's name and description.
+ * feature's description, using the shared overlay panel styles.
  *
- * @param {Object} feature - A GeoJSON feature with 'name' and 'description' properties.
+ * @param {Object} feature - A GeoJSON feature with a 'Description' property.
  */
 export function showInfoOverlay(feature) {
     // First, remove any existing overlay to avoid duplicates.
-    const existingOverlay = document.querySelector('.info-overlay-wrapper');
+    const existingOverlay = document.querySelector('.overlay-panel-overlay');
     if (existingOverlay) {
         existingOverlay.remove();
     }
 
-
+    // Get the description text from the feature properties.
     const description = feature.properties.Description || "No description available.";
 
-    // Create the main wrapper for the overlay.
+    // Create the main wrapper for the overlay using the overlay panel class.
     const wrapper = document.createElement('div');
-    wrapper.className = 'info-overlay-wrapper';
+    wrapper.className = 'overlay-panel-overlay';
     // Add a click event to the wrapper to close the overlay when the background is clicked.
     wrapper.onclick = function(event) {
         if (event.target === wrapper) {
@@ -25,20 +25,18 @@ export function showInfoOverlay(feature) {
         }
     };
 
-    // Create the content container for the text.
-    const content = document.createElement('div');
-    content.className = 'info-content';
-    // Populate the content with the feature's name and description.
-    content.innerHTML = `
-        <p>${description}</p>
-    `;
+    // Create the content container for the text, using the overlay panel class.
+    const panel = document.createElement('div');
+    panel.className = 'overlay-panel-panel';
+    // Populate the content with the feature's description.
+    panel.innerHTML = `<p>${description}</p>`;
     // Stop click events inside the content from bubbling up to the wrapper.
-    content.onclick = function(event) {
+    panel.onclick = function(event) {
         event.stopPropagation();
     };
 
-    // Append the content to the wrapper, and the wrapper to the body.
-    wrapper.appendChild(content);
+    // Append the panel to the wrapper, and the wrapper to the body.
+    wrapper.appendChild(panel);
     document.body.appendChild(wrapper);
 
     // Use requestAnimationFrame to ensure the element is in the DOM before adding
@@ -53,7 +51,8 @@ export function showInfoOverlay(feature) {
  * It triggers a fade-out animation and then removes the element.
  */
 export function hideInfoOverlay() {
-    const wrapper = document.querySelector('.info-overlay-wrapper');
+    // Target the overlay using the shared overlay panel class.
+    const wrapper = document.querySelector('.overlay-panel-overlay');
     if (wrapper) {
         // Remove the 'visible' class to start the fade-out animation.
         wrapper.classList.remove('visible');
