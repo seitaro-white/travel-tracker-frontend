@@ -254,7 +254,7 @@ export function manageLayerVisibilityByZoom(map, layer, minZoom) {
  * @param {string} [easing="easeInOutQuad"] - Animation easing function.
  * @returns {Promise<void>}
  */
-export async function animateMarkerAlongLine(map, filePath, icon, speed = 6000000, easing = "easeInOutQuad") {
+export async function animateMarkerAlongLine(map, filePath, icon, speed = 1000000, easing = "easeInOutQuad") {
     // Fetch the GeoJSON data
     const geojson = await fetchGeoJson(filePath);
     const feature = geojson.features[0];
