@@ -252,16 +252,25 @@ export function manageLayerVisibilityByZoom(map, layer, minZoom) {
  * @param {L.DivIcon|L.Icon} [icon] - Optional custom icon for the marker.
  * @param {number} [speed=600000] - Animation speed (meters per hour).
  * @param {string} [easing="easeInOutQuad"] - Animation easing function.
+ * @param {string} [svgPath="/airplane.svg"] - Optional path to the SVG file in public directory.
  * @returns {Promise<void>}
  */
-export async function animateMarkerAlongLine(map, filePath, icon, speed = 1000000, easing = "easeInOutQuad") {
+export async function animateMarkerAlongLine(map, filePath, svgPath, speed = 1500000) {
     // Fetch the GeoJSON data
     const geojson = await fetchGeoJson(filePath);
     const feature = geojson.features[0];
 
-    // Use a FontAwesome plane icon that can be rotated by leaflet.motion
-    const markerIcon = icon || L.divIcon({
-        html: `<i class="fa fa-plane fa-2x" aria-hidden="true" motion-base="-48"></i>`,
+    // Fetch the SVG file as text
+    let svgText = await fetch(svgPath).then(res => res.text());
+    // Inject motion-base="-48" into the root <svg> tag so Leaflet.Motion rotates it
+    svgText = svgText.replace(
+        /<svg([\s\S]*?)>/i,
+        '<svg$1 motion-base="-48">'
+    );
+
+    // Declare markerIcon as a constant
+    const markerIcon = L.divIcon({
+        html: svgText,
         className: "",
         iconSize: [32, 32],
         iconAnchor: [16, 16]
@@ -274,7 +283,7 @@ export async function animateMarkerAlongLine(map, filePath, icon, speed = 100000
     const layer = L.motion.polyline(
         coords,
         { color: "#000", opacity: 0, weight: 2 }, // invisible line
-        { auto: true, speed: speed, easing: L.Motion.Ease.easeInOutQuart }, // add easing here
+        { auto: true, speed: speed, easing: L.Motion.Ease.easeOutSine },
         { icon: markerIcon }
     ).addTo(map);
 
