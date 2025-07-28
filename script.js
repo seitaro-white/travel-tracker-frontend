@@ -4,6 +4,8 @@ import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPoi
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
+// Import the new functions for the places layer.
+import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer.js';
 import { showOverlayPanel } from './src/features/overlays/overlayPanel.js'; // updated import
 
 // Function to initialize the map with responsive center/zoom.
@@ -104,8 +106,18 @@ async function setupMap() {
         );
 
     // Use the new generic function to manage the info layer's visibility.
-    // This will show the layer only when the zoom level is 17 or higher.
+    // This will show the layer only when the zoom level is 10 or higher.
     manageLayerVisibilityByZoom(map, infoPointLayer, 10);
+
+    // Add places layer
+    const placesPointLayer = await createGeoJsonPointLayer(
+        'assets/points/places.geojson',
+        onEachPlaceFeature,
+        pointToLayerForPlaces
+    );
+
+    // This will show the layer only when the zoom level is 10 or higher.
+    manageLayerVisibilityByZoom(map, placesPointLayer, 10);
 
     // After animation finishes, show the intro overlay panel.
     // We fetch the HTML from the new file and pass it to showOverlayPanel.

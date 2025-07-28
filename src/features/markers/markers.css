@@ -3,13 +3,8 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    object-fit: cover;
-    display: block;
-    border: 1.5px solid whitesmoke; /* Default border */
-    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
-    transform: scale(1); /* Default scale */
-    /* Apply transition to transform and border properties */
-    transition: transform 0.2s ease-in-out, border 0.2s ease-in-out;
+    border: 1px solid #fff;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
 }
 
 .photo-marker-image-hover {
@@ -77,4 +72,13 @@
 
 .info-marker-icon:hover {
     transform: scale(1.5);
+}
+
+.place-tooltip {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: black;
+    font-weight: bold;
+    font-size: 12px;
 }
