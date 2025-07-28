@@ -6,7 +6,7 @@ export const placeEmojis = {
     "公園": "⛲️",            // Park
     "博物館": "🏛️",          // Museum
     "喫茶店": "☕️",           // Cafe
-    "店": "🏬",               // Shop
+    "店": "🛍️",               // Shop
     "料理店": "🍽️",          // Restaurant
     "横丁": "🏮",             // Alley/Bar street
     "歴史の場所": "🏯",        // Historical place
