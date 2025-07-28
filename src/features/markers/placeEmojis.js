@@ -3,7 +3,7 @@ export const placeEmojis = {
     "スーパー": "🛒",         // Supermarket
     "ホテル": "🏨",           // Hotel
     "交通": "🚉",             // Transport (station)
-    "公園": "🏞️",            // Park
+    "公園": "⛲️",            // Park
     "博物館": "🏛️",          // Museum
     "喫茶店": "☕️",           // Cafe
     "店": "🏬",               // Shop
