@@ -5,6 +5,8 @@
     border-radius: 50%;
     border: 1px solid #fff;
     box-shadow: 0 0 3px rgba(0,0,0,0.5);
+    z-index: 40; /* Highest: photos always on top */
+    position: relative;
 }
 
 .photo-marker-image-hover {
@@ -17,6 +19,7 @@
     position: relative;
     width: 100%;
     height: 100%;
+    z-index: 30; /* Cluster markers below photos, above info/place */
 }
 
 .stack-item {
@@ -67,11 +70,31 @@
     cursor: pointer;
     transform: scale(1);
     transition: transform 0.2s ease-in-out;
-    z-index: -1;
+    z-index: 20; /* Info below clusters, above places */
+    position: relative;
 }
 
 .info-marker-icon:hover {
     transform: scale(1.5);
+}
+
+/* --- Place Marker Styles --- */
+.place-marker {
+    font-size: 16px;                 /* Emoji size */
+    line-height: 1;
+    text-align: center;
+    width: 20px;                     /* Make the marker a circle */
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    z-index: 10;
+    position: relative;
+    border-radius: 50%;              /* Circle shape */
+    border: 2px solid #fff;          /* White border */
+    background: #f5f5f5;             /* Off-white/grey background */
+    box-shadow: 0 0 3px rgba(0,0,0,0.10);
 }
 
 .place-tooltip {

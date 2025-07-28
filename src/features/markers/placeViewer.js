@@ -45,8 +45,8 @@ export function pointToLayerForPlaces(feature, latlng) {
     const customIcon = L.divIcon({
         html: `<div class="place-marker">${emoji}</div>`,
         className: '', // No extra class on the container
-        iconSize: [24, 24], // The size of the icon.
-        iconAnchor: [12, 12] // The point of the icon which will correspond to marker's location.
+        iconSize: [20, 20], // The size of the icon.
+        iconAnchor: [10, 10] // The point of the icon which will correspond to marker's location.
     });
 
     // Return a new Leaflet marker at the given latlng with our custom icon.
