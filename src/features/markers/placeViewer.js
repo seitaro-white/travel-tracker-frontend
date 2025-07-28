@@ -50,5 +50,8 @@ export function pointToLayerForPlaces(feature, latlng) {
     });
 
     // Return a new Leaflet marker at the given latlng with our custom icon.
-    return L.marker(latlng, { icon: customIcon });
+    return L.marker(latlng, {
+        icon: customIcon,
+        pane: 'shadowPane'
+    });
 }
