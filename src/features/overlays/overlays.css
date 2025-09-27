@@ -61,7 +61,7 @@
 }
 
 .polaroid-animated-wrapper-overlay.visible .polaroid {
-    transform: translateY(0);
+    transform: translateY(0) rotate(1.5deg);
     opacity: 1;
 }
 
