@@ -153,16 +153,6 @@
     z-index: 1001; /* Ensure it's above the map key but below overlays */
     display: flex;
     align-items: flex-start;
-    /* Initially hide the container until the intro is closed */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s ease-in-out;
-}
-
-/* Make the container (and its icon) visible when the 'visible' class is added. */
-.legend-container.visible {
-    opacity: 1;
-    visibility: visible;
 }
 
 /* Style for the legend icon itself. */

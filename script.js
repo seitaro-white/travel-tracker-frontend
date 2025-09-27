@@ -73,6 +73,28 @@ async function fetchHtmlFile(filePath) {
 async function setupMap() {
     const map = initializeMap('map');
 
+    // Create a container for the legend icon and the map key.
+    // This container will be positioned in the top-right of the screen.
+    const legendContainer = document.createElement('div');
+    legendContainer.id = 'legend-container';
+    legendContainer.className = 'legend-container';
+
+    // Create the legend icon that the user will hover over.
+    // We're using a Font Awesome icon here.
+    const legendIcon = document.createElement('i');
+    legendIcon.className = 'fa fa-map-o legend-icon';
+
+    // Add the icon to our container.
+    legendContainer.appendChild(legendIcon);
+
+    // Fetch the HTML for the mini map key.
+    const miniMapKeyHtml = await fetchHtmlFile('miniMapKey.html');
+    // Add the map key HTML into the container, right after the icon.
+    legendContainer.insertAdjacentHTML('beforeend', miniMapKeyHtml);
+
+    // Add the complete legend container (with icon and hidden key) to the page.
+    document.body.appendChild(legendContainer);
+
     // 1. Animate the incoming flight marker first
     await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
 
@@ -119,41 +141,11 @@ async function setupMap() {
     // This will show the layer only when the zoom level is 10 or higher.
     manageLayerVisibilityByZoom(map, placesPointLayer, 10);
 
-    // Create a container for the legend icon and the map key.
-    // This container will be positioned in the top-right of the screen.
-    const legendContainer = document.createElement('div');
-    legendContainer.id = 'legend-container';
-    legendContainer.className = 'legend-container';
-
-    // Create the legend icon that the user will hover over.
-    // We're using a Font Awesome icon here.
-    const legendIcon = document.createElement('i');
-    legendIcon.className = 'fa fa-map-o legend-icon';
-
-    // Add the icon to our container.
-    legendContainer.appendChild(legendIcon);
-
-    // Fetch the HTML for the mini map key.
-    const miniMapKeyHtml = await fetchHtmlFile('miniMapKey.html');
-    // Add the map key HTML into the container, right after the icon.
-    legendContainer.insertAdjacentHTML('beforeend', miniMapKeyHtml);
-
-    // Add the complete legend container (with icon and hidden key) to the page.
-    document.body.appendChild(legendContainer);
-
     // After animation finishes, show the intro overlay panel.
     // We fetch the HTML from the new file and pass it to showOverlayPanel.
     const introHtml = await fetchHtmlFile('introOverlay.html');
-    showOverlayPanel(introHtml, () => {
-      // This callback runs after the panel is closed.
-
-      // Find the legend container element in the DOM.
-      const legendContainer = document.querySelector('.legend-container');
-      // If the element exists, add the 'visible' class to fade the icon in.
-      if (legendContainer) {
-        legendContainer.classList.add('visible');
-      }
-    });
+    // The legend is now always visible, so we no longer need a callback here.
+    showOverlayPanel(introHtml);
 
     // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
