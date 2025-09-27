@@ -131,3 +131,130 @@
   font-size: 1em;
   cursor: pointer;
 }
+
+/* This rule makes the map key a two-column layout by default */
+.map-key-columns {
+    display: flex;
+    flex-direction: row; /* Arrange columns side-by-side */
+    gap: 20px; /* This will now be horizontal gap between columns */
+}
+
+.key-item span {
+    font-size: 14px;
+}
+
+/* --- Legend Icon and Container Styles --- */
+
+/* This is the main container for the legend icon and the hover-able map key. */
+.legend-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1001; /* Ensure it's above the map key but below overlays */
+    display: flex;
+    align-items: flex-start;
+    /* Initially hide the container until the intro is closed */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* Make the container (and its icon) visible when the 'visible' class is added. */
+.legend-container.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Style for the legend icon itself. */
+.legend-icon {
+    font-size: 24px;
+    padding: 8px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    color: #333;
+}
+
+/* Styles for the new mini map key */
+.mini-map-key {
+    /* The key is now positioned relative to the legend-container */
+    position: absolute;
+    /* Position it to the left of the icon */
+    top: 0;
+    right: 100%;
+    margin-right: 10px; /* Add some space between the key and the icon */
+    /* Ensure it's above the map */
+    z-index: 1000;
+    /* Add a background and padding */
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px;
+    border-radius: 5px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    /* Make it more compact - adjusted for single column */
+    width: 140px;
+    /* Initially hide the map key */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px); /* Start slightly to the right for a slide-in effect */
+    /* Add a transition for a smooth fade-in effect */
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
+}
+
+/* When hovering over the legend-container, make the mini-map-key visible. */
+.legend-container:hover .mini-map-key {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0); /* Slide it into its final position */
+}
+
+.mini-map-key h3 {
+    /* Reduce heading size and margin */
+    font-size: 14px;
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.mini-map-key .map-key-columns {
+    /* Override for the mini key to be a single column */
+    flex-direction: column;
+    gap: 0;
+}
+
+.mini-map-key .key-item {
+    /* Reduce gap between icon and text */
+    gap: 6px;
+}
+
+.mini-map-key .key-item span {
+    /* Reduce font size for the text */
+    font-size: 11px;
+}
+
+.map-key-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Adjust gap for closer items */
+}
+
+/* Media query for smaller screens to make the mini map key even more compact */
+@media (max-width: 700px) {
+    .mini-map-key {
+        width: 120px;
+        padding: 5px;
+    }
+
+    .mini-map-key h3 {
+        font-size: 12px;
+        margin-bottom: 5px;
+    }
+
+    .mini-map-key .key-item span {
+        font-size: 8px;
+    }
+
+    .mini-map-key .key-item {
+        gap: 2px;
+    }
+}

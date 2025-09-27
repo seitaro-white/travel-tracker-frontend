@@ -105,6 +105,13 @@
     transform: scale(1.5);
 }
 
+/* This rule specifically targets the info marker icon when it's inside the mini map key.
+   It scales it down to match the smaller size of the key. */
+.mini-map-key .info-marker-icon {
+    transform: scale(0.7) !important; /* Use !important to override inline style */
+    box-shadow: none !important;
+}
+
 /* --- Place Marker Styles --- */
 .place-marker {
     font-size: 16px;                 /* Emoji size */
