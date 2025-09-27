@@ -10,7 +10,7 @@
 }
 
 .photo-marker-image-hover {
-    transform: scale(3);
+    transform: scale(2);
     border: 2px solid whitesmoke; /* Hover state border */
 }
 
@@ -20,6 +20,13 @@
     width: 100%;
     height: 100%;
     z-index: 30; /* Cluster markers below photos, above info/place */
+    /* Add a transition for smooth scaling on hover */
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Add a hover effect to scale up the entire cluster */
+.custom-cluster-stack:hover {
+    transform: scale(1.2);
 }
 
 .stack-item {
@@ -30,6 +37,8 @@
     border: 1.5px solid whitesmoke;
     box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
     background-color: #fff;
+    /* Add a transition for smooth movement on hover */
+    transition: all 0.2s ease-in-out;
 }
 
 .stack-item-1 {
@@ -38,16 +47,34 @@
     z-index: 3; /* Ensures it's on top */
 }
 
+/* Move the top item up and to the right on hover */
+.custom-cluster-stack:hover .stack-item-1 {
+    top: -4px;
+    left: 10px;
+}
+
 .stack-item-2 {
     top: 3px;
     left: 3px;
     z-index: 2;
 }
 
+/* The middle item can stay in place or move slightly */
+.custom-cluster-stack:hover .stack-item-2 {
+    top: 3px;
+    left: 3px;
+}
+
 .stack-item-3 {
     top: 6px;
     left: 0;
     z-index: 1;
+}
+
+/* Move the bottom item down and to the left on hover */
+.custom-cluster-stack:hover .stack-item-3 {
+    top: 10px;
+    left: -4px;
 }
 
 /* --- Info Marker Icon Styles --- */
