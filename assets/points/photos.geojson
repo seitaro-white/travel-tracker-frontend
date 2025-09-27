@@ -765,6 +765,8 @@
 { "type": "Feature", "properties": { "filename": "P9213119", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.550034, 35.321648, 8.60287 ] } },
 { "type": "Feature", "properties": { "filename": "P9213126", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.550034, 35.324112, 5.88901 ] } },
 { "type": "Feature", "properties": { "filename": "P9213138", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.542648, 35.325535, 74.9336 ] } },
-{ "type": "Feature", "properties": { "filename": "P9213161", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.539215, 35.324562, 24.7033 ] } }
+{ "type": "Feature", "properties": { "filename": "P9213161", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.539215, 35.324562, 24.7033 ] } },
+{ "type": "Feature", "properties": { "filename": "P9173077", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.03537, 35.203873, 759.924 ] } },
+{ "type": "Feature", "properties": { "filename": "P9173074", "description": null }, "geometry": { "type": "Point", "coordinates": [ 139.030655, 35.202576, 722.748 ] } }
 ]
 }
