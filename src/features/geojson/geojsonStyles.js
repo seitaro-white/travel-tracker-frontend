@@ -5,7 +5,7 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 400000,
+    speed: 600000,
     dashArray: "2, 4"      // default motion speed
   },
   // style for Shinkansen features
@@ -13,7 +13,7 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 800000,
+    speed: 1000000,
     dashArray: "4, 6"     // fast speed for Shinkansen
   },
   // style for LongFerry features
@@ -21,7 +21,7 @@ export const AnimatedLineStyles = {
     color: "#ff5e00ff",
     weight: 2.5,
     opacity: 0.9,
-    speed: 1600000,
+    speed: 2400000,
     dashArray: "10, 20"     // fast speed for ferry
   }
 };
