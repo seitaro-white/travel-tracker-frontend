@@ -8,6 +8,8 @@
   transition: box-shadow 0.2s ease-in-out;
   overflow-y: auto;
   box-sizing: border-box;
+  /* position: relative is needed so the date stamp can be positioned absolutely within */
+  position: relative;
 }
 
 .polaroid img {
@@ -27,6 +29,23 @@
   font-family: 'Caveat', cursive;
   word-wrap: break-word;
   padding: 0 10px;
+}
+
+/* --- Polaroid Date Stamp --- */
+/* This creates a date stamp in the bottom right corner of the polaroid,
+   styled to look like a simple typewriter stamp (dark text, no shadow). */
+.polaroid-date-stamp {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  /* A simple monospace font that looks like a typewriter stamp */
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85em;
+  font-weight: bold;
+  color: #333;
+  letter-spacing: 2px;
+  /* Apply the SVG filter for a worn/imperfect stamp look */
+  filter: url(#stamp-texture);
 }
 
 /* --- Animated Polaroid Wrapper --- */
