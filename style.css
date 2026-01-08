@@ -48,28 +48,38 @@ h1 {
 
 /* --- New styles for the map key --- */
 .map-key {
-  margin-top: 24px; /* Space above the key */
-  padding-top: 16px; /* Space between the text and the key items */
-  border-top: 1px solid #eee; /* A light separator line */
+  margin-top: 28px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.06);
 }
 
 .map-key h3 {
   text-align: center;
   margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 1.1em;
-  color: #333;
+  margin-bottom: 16px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 .key-item {
-  display: flex; /* Align icon and text horizontally */
-  align-items: center; /* Center them vertically */
-  margin-bottom: 10px; /* Space between key items */
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.key-item span {
+  font-size: 0.95em;
+  color: #444;
 }
 
 .key-icon {
-  width: 30px; /* Fixed width for the icon container */
-  margin-right: 12px; /* Space between icon and text */
+  width: 36px;
+  margin-right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
