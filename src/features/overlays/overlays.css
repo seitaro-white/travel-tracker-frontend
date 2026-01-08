@@ -206,12 +206,20 @@
 /* Style for the legend icon itself. */
 .legend-icon {
     font-size: 24px;
-    padding: 8px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 5px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    padding: 10px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     cursor: pointer;
     color: #333;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+.legend-icon:hover {
+    background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: scale(1.05);
 }
 
 /* Styles for the new mini map key */

@@ -79,8 +79,8 @@
 
 /* --- Info Marker Icon Styles --- */
 .info-marker-icon {
-    background-color: transparent;
-    color: #4b4b4b;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
     border-radius: 50%;
     width: 16px;
     height: 16px;
@@ -89,20 +89,21 @@
     justify-content: center;
     font-weight: bold;
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 24px;
     text-align: center;
-    border: 2px solid #4b4b4b;
-    box-shadow: 2px 2px 3px rgba(0,0,0,0.2);
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
     cursor: pointer;
     transform: scale(1);
-    transition: transform 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
     z-index: 20; /* Info below clusters, above places */
     position: relative;
 }
 
 .info-marker-icon:hover {
     transform: scale(1.5);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
 }
 
 /* This rule specifically targets the info marker icon when it's inside the mini map key.
