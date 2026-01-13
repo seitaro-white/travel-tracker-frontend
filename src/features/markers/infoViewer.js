@@ -27,9 +27,16 @@ export function showInfoOverlay(feature) {
 
     // Create the content container for the text, using the overlay panel class.
     const panel = document.createElement('div');
-    panel.className = 'overlay-panel-panel';
-    // Populate the content with the feature's description.
-    panel.innerHTML = `<p>${description}</p>`;
+    panel.className = 'overlay-panel-panel info-panel';
+
+    // Build a simple index card / note card structure - minimal like the polaroid
+    panel.innerHTML = `
+        <div class="info-panel-badge">i</div>
+        <div class="info-panel-content">
+            <p>${description}</p>
+        </div>
+    `;
+
     // Stop click events inside the content from bubbling up to the wrapper.
     panel.onclick = function(event) {
         event.stopPropagation();

@@ -304,3 +304,88 @@
         gap: 2px;
     }
 }
+
+/* --- Info Panel Specific Styles --- */
+
+/* Container for the info panel - styled like an index card/note card.
+   This mimics the polaroid aesthetic with a simple paper-like appearance. */
+.overlay-panel-panel.info-panel {
+    /* Cream/off-white background for that paper/card feel */
+    background: #fffef9 !important;
+    /* Simple border like the polaroid */
+    border: 1px solid #E0E0E0;
+    /* Padding similar to polaroid but adjusted for text content */
+    padding: 24px !important;
+    /* Same shadow style as polaroid for consistency */
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3) !important;
+    /* Smooth border radius for card edges */
+    border-radius: 3px !important;
+    /* Maximum width to keep text readable */
+    max-width: 450px !important;
+    /* Position relative for the info badge */
+    position: relative;
+    /* Override the generic panel styles */
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+/* Small info badge in top right corner - minimal design */
+.info-panel-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    background-color: #333;
+    color: #fffef9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: Georgia, serif;
+    font-style: italic;
+}
+
+/* Content area with the description text */
+.info-panel-content {
+    /* Remove any background gradients */
+    background: none;
+    padding: 0;
+    margin-top: 8px;
+}
+
+/* Style the paragraph inside the content */
+.info-panel-content p {
+    color: #333;
+    font-size: 1em;
+    line-height: 1.6;
+    margin: 0;
+    text-align: left;
+    /* Clean, readable font */
+    font-family: -apple-system, 'Caveat', cursive;
+}
+
+/* Remove the decorative accent bar */
+.info-panel-content p::before {
+    content: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+    .overlay-panel-panel.info-panel {
+        padding: 20px !important;
+        max-width: calc(100vw - 40px) !important;
+    }
+
+    .info-panel-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+    }
+
+    .info-panel-content p {
+        font-size: 0.95em;
+    }
+}
