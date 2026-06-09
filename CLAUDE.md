@@ -39,7 +39,7 @@ tests/
 
 ### Key E2E constraints to know
 
-**Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `script.js`). The full integration test handles this by:
+**Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `src/utils/layerVisibility.js`, wired up from `script.js`). The full integration test handles this by:
 1. Intercepting `incoming_flight.geojson` and `animation_tracks.geojson` via `page.route()` and returning 2-point stub GeoJSON — the animation chain then completes in ~10ms instead of 20–30 seconds.
 2. Capturing the Leaflet map instance via `page.addInitScript()` which wraps `L.map()` before the CDN bundle loads, storing the result as `window.__leafletMap`.
 3. Calling `window.__leafletMap.setZoom(12, { animate: false })` to zoom in and trigger `zoomend`.
@@ -63,10 +63,11 @@ Note: The human developer doesn't experience this caching issue in their browser
 **Entry Point:** `index.html` → `script.js` (ES6 module)
 
 **Feature-based module organization:**
-- `src/features/animations/` - Chained animation system with UUID-based triggers
+- `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker)
 - `src/features/geojson/` - GeoJSON fetching and Leaflet layer creation
 - `src/features/markers/` - Photo, place, and info marker callbacks (onEachFeature/pointToLayer pattern)
 - `src/features/overlays/` - Overlay panel system including polaroid photo display
+- `src/utils/` - Generic, feature-agnostic map helpers (e.g. `layerVisibility.js`)
 
 **Key libraries (CDN-loaded):**
 - Leaflet 1.9.4 for mapping
