@@ -1,3 +1,5 @@
+import { openOverlay } from '../overlays/overlayBase.js';
+
 /**
  * Shows an overlay with the information from a feature.
  * This function creates and displays a DOM element containing the
@@ -6,24 +8,8 @@
  * @param {Object} feature - A GeoJSON feature with a 'Description' property.
  */
 export function showInfoOverlay(feature) {
-    // First, remove any existing overlay to avoid duplicates.
-    const existingOverlay = document.querySelector('.overlay-panel-overlay');
-    if (existingOverlay) {
-        existingOverlay.remove();
-    }
-
     // Get the description text from the feature properties.
     const description = feature.properties.Description || "No description available.";
-
-    // Create the main wrapper for the overlay using the overlay panel class.
-    const wrapper = document.createElement('div');
-    wrapper.className = 'overlay-panel-overlay';
-    // Add a click event to the wrapper to close the overlay when the background is clicked.
-    wrapper.onclick = function(event) {
-        if (event.target === wrapper) {
-            hideInfoOverlay();
-        }
-    };
 
     // Create the content container for the text, using the overlay panel class.
     const panel = document.createElement('div');
@@ -37,41 +23,11 @@ export function showInfoOverlay(feature) {
         </div>
     `;
 
-    // Stop click events inside the content from bubbling up to the wrapper.
-    panel.onclick = function(event) {
-        event.stopPropagation();
-    };
-
-    // Append the panel to the wrapper, and the wrapper to the body.
-    wrapper.appendChild(panel);
-    document.body.appendChild(wrapper);
-
-    // Use requestAnimationFrame to ensure the element is in the DOM before adding
-    // the 'visible' class, which will trigger the CSS fade-in animation.
-    requestAnimationFrame(() => {
-        wrapper.classList.add('visible');
+    // Dismissable by clicking the backdrop or pressing Escape; fades out on close.
+    openOverlay({
+        wrapperClass: 'overlay-panel-overlay',
+        panel,
     });
-}
-
-/**
- * Hides and removes the information overlay from the DOM.
- * It triggers a fade-out animation and then removes the element.
- */
-export function hideInfoOverlay() {
-    // Target the overlay using the shared overlay panel class.
-    const wrapper = document.querySelector('.overlay-panel-overlay');
-    if (wrapper) {
-        // Remove the 'visible' class to start the fade-out animation.
-        wrapper.classList.remove('visible');
-
-        // Listen for the end of the transition, then remove the element.
-        // The 'once: true' option ensures the event listener is removed after it runs.
-        wrapper.addEventListener('transitionend', () => {
-            if (wrapper.parentElement) {
-                wrapper.remove();
-            }
-        }, { once: true });
-    }
 }
 
 /**

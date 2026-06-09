@@ -1,41 +1,31 @@
-// This function shows a simple overlay panel with your content and a "Continue" button.
+import { openOverlay } from './overlayBase.js';
+
+// Shows a simple overlay panel with your content and a "Continue" button.
 // When the button is clicked, the overlay is removed and onClose() is called (if provided).
+// This panel is intentionally modal: it can only be dismissed via the button
+// (no backdrop-click, no Escape), so the reader has to acknowledge it.
 export function showOverlayPanel(contentHtml, onClose) {
-    // Remove any existing overlay to avoid duplicates.
-    const existing = document.querySelector('.overlay-panel-overlay');
-    if (existing) existing.remove();
-
-    // Create the full-screen overlay background.
-    const overlay = document.createElement('div');
-    overlay.className = 'overlay-panel-overlay';
-
     // Create the centered panel for your content.
     const panel = document.createElement('div');
     panel.className = 'overlay-panel-panel';
     panel.innerHTML = contentHtml;
 
-    // Create the "Continue" button.
+    // Create the "Continue" button that closes the overlay.
     const closeBtn = document.createElement('button');
     closeBtn.className = 'overlay-panel-close';
     closeBtn.textContent = 'Continue';
-    // When clicked, remove the overlay and call onClose if provided.
-    closeBtn.onclick = () => {
-        overlay.remove();
-        if (onClose) onClose();
-    };
     panel.appendChild(closeBtn);
 
-    // Prevent clicks on the overlay background from closing the panel.
-    overlay.onclick = (e) => { if (e.target === overlay) { /* do nothing */ } };
-
-    // Add the panel to the overlay, and the overlay to the document.
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-
-    // Add the .visible class after the overlay is in the DOM to trigger the fade-in.
-    requestAnimationFrame(() => {
-        overlay.classList.add('visible');
+    const { close } = openOverlay({
+        wrapperClass: 'overlay-panel-overlay',
+        panel,
+        dismissOnBackdrop: false,
+        dismissOnEscape: false,
+        gracefulClose: false, // remove immediately on Continue (matches prior behaviour)
+        onClose,
     });
+
+    closeBtn.onclick = close;
 
     // Optionally focus the panel for accessibility.
     panel.tabIndex = -1;

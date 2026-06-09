@@ -1,7 +1,7 @@
 // This module handles marker logic for photo features.
 // The overlay logic is now imported from the overlays module.
 
-import { showAnimatedPolaroid, hideAnimatedPolaroidOnClick } from '../overlays/polaroidOverlay.js';
+import { showAnimatedPolaroid } from '../overlays/polaroidOverlay.js';
 
 /**
  * Callback function to attach events for photo features in the GeoJSON layer.

@@ -2,6 +2,10 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
     testDir: './tests/e2e',
+    // One retry: setup is gated behind cold CDN bundle loads (Leaflet, markercluster
+    // from unpkg). Under worker contention a cold load can occasionally exceed the
+    // setup wait. The retry only costs time when a flake actually occurs.
+    retries: 1,
     // Start http-server automatically before the suite; stop it after.
     // reuseExistingServer: true means it won't fail if you already have
     // the server running in another terminal (handy during development).

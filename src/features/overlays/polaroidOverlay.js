@@ -1,6 +1,8 @@
 // This module handles creation and removal of the animated polaroid overlay.
 // It is intended to be called from marker/photo logic elsewhere.
 
+import { openOverlay } from './overlayBase.js';
+
 /**
  * Ensures the SVG filter for the stamp texture effect exists in the DOM.
  * This filter uses turbulence to create a worn/imperfect stamp look.
@@ -46,26 +48,9 @@ export function showAnimatedPolaroid(feature) {
     // Ensure the SVG filter for stamp texture is in the DOM.
     ensureStampFilter();
 
-    // Remove any existing polaroid overlay first to avoid duplicates.
-    const existingWrapper = document.querySelector('.polaroid-animated-wrapper-overlay');
-    if (existingWrapper) {
-        existingWrapper.remove();
-    }
-
     // Construct the image path and caption from the feature properties.
     const imagePath = `assets/photos/display/${feature.properties.filename}.jpg`;
     const captionText = feature.properties.description || "";
-
-    // Create the overlay wrapper element.
-    const wrapper = document.createElement('div');
-    wrapper.className = 'polaroid-animated-wrapper-overlay';
-
-    // Clicking the overlay background removes it, but clicking inside the polaroid does not.
-    wrapper.onclick = function (event) {
-        if (event.target === wrapper) {
-            hideAnimatedPolaroidOnClick();
-        }
-    };
 
     // Create the polaroid element that holds the image and caption.
     const polaroidElement = document.createElement('div');
@@ -97,11 +82,6 @@ export function showAnimatedPolaroid(feature) {
         dateStamp.textContent = formattedDate;
     }
 
-    // Prevent clicks on the polaroid itself from closing the overlay.
-    polaroidElement.onclick = function (event) {
-        event.stopPropagation();
-    };
-
     // Append image, caption, and date stamp to the polaroid element.
     polaroidElement.appendChild(img);
     polaroidElement.appendChild(caption);
@@ -109,47 +89,19 @@ export function showAnimatedPolaroid(feature) {
         polaroidElement.appendChild(dateStamp);
     }
 
-    // Append the polaroid to the overlay and add the overlay to the DOM.
-    wrapper.appendChild(polaroidElement);
-    document.body.appendChild(wrapper);
-
-    // Wait for the image to load before triggering the animation.
-    img.onload = () => {
-        // Use two requestAnimationFrame calls to ensure the element is in the DOM before animating.
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                wrapper.classList.add('visible');
-            });
-        });
-    };
-
-    // If the image fails to load, still show the overlay after a short delay.
-    img.onerror = () => {
-        setTimeout(() => {
-            wrapper.classList.add('visible');
-        }, 100);
-    };
-}
-
-/**
- * Hides the animated polaroid overlay.
- * It removes the CSS 'visible' class to trigger the fade-out transition,
- * then removes the element from the DOM once the transition ends.
- */
-export function hideAnimatedPolaroidOnClick() {
-    const wrapper = document.querySelector('.polaroid-animated-wrapper-overlay');
-    if (wrapper && wrapper.classList.contains('visible')) {
-        // Remove the visible class to start the fade-out animation.
-        wrapper.classList.remove('visible');
-
-        // Once the CSS opacity transition ends, remove the overlay from the DOM.
-        const onTransitionEnd = (event) => {
-            if (event.target === wrapper && event.propertyName === 'opacity') {
-                if (wrapper.parentElement) {
-                    wrapper.remove();
-                }
+    // Open the overlay, but wait for the image to load before fading in (so the
+    // polaroid doesn't pop in half-rendered). onerror resolves too, so a missing
+    // image still shows the overlay rather than hanging.
+    openOverlay({
+        wrapperClass: 'polaroid-animated-wrapper-overlay',
+        panel: polaroidElement,
+        beforeShow: () => new Promise(resolve => {
+            if (img.complete) {
+                resolve();
+            } else {
+                img.onload = resolve;
+                img.onerror = resolve;
             }
-        };
-        wrapper.addEventListener('transitionend', onTransitionEnd, { once: true });
-    }
+        }),
+    });
 }
