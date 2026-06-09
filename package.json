@@ -1,0 +1,27 @@
+{
+  "name": "travel-tracker-frontend",
+  "version": "1.0.0",
+  "description": "This is the frontend application for my travel tracker project, which visualizes my trip to Japan using an interactive map. It's built with vanilla JavaScript (ES6 modules) and uses the Leaflet library for mapping functionalities.",
+  "main": "script.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seitaro-white/travel-tracker-frontend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/seitaro-white/travel-tracker-frontend/issues"
+  },
+  "homepage": "https://github.com/seitaro-white/travel-tracker-frontend#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "vitest": "^4.1.8"
+  }
+}

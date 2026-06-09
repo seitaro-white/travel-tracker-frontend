@@ -10,7 +10,44 @@ This is a travel visualization application displaying an interactive map of a Ja
 
 **Running locally:** Serve the project directory with using http-server -p 8000 (we have http-server installed locally).
 
-**No build/test/lint commands** - this is a pure vanilla JS project with no npm scripts.
+**App code has no build step** - JS/CSS files are served directly. However there is a `package.json` for the test runner (dev-only). Run `npm install` once after cloning.
+
+## Testing
+
+### Test commands
+
+| Command | What it runs | Speed |
+|---------|-------------|-------|
+| `npm test` | Vitest unit + schema + emoji tests | ~0.5s |
+| `npm run test:e2e` | Playwright E2E (smoke + full integration) | ~4s |
+| `npx playwright test smoke` | Smoke test only (map loads, no JS errors) | ~1s |
+| `npx playwright test full-integration` | Full integration with place markers | ~2s |
+| `npx playwright test --ui` | Playwright interactive UI (good for debugging) | — |
+
+### Test layout
+
+```
+tests/
+  sanity.test.js              # trivial 1+1 tooling check
+  geojsonService.test.js      # unit tests for fetchGeoJson() (3 code paths)
+  geojson-schema.test.js      # data validation for all 3 GeoJSON point files
+  placeEmojis.test.js         # dead-key check: every emoji key is used in data
+  e2e/
+    smoke.spec.js             # Leaflet container + tile + marker load, no JS errors
+    full-integration.spec.js  # place markers visible after animation + zoom
+```
+
+### Key E2E constraints to know
+
+**Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `script.js`). The full integration test handles this by:
+1. Intercepting `incoming_flight.geojson` and `animation_tracks.geojson` via `page.route()` and returning 2-point stub GeoJSON — the animation chain then completes in ~10ms instead of 20–30 seconds.
+2. Capturing the Leaflet map instance via `page.addInitScript()` which wraps `L.map()` before the CDN bundle loads, storing the result as `window.__leafletMap`.
+3. Calling `window.__leafletMap.setZoom(12, { animate: false })` to zoom in and trigger `zoomend`.
+
+**Leaflet has no public map registry** — `document.getElementById('map')._leaflet_map` does NOT exist in Leaflet 1.9.4. The `window.__leafletMap` intercept pattern (in `captureLeafletMap()` in `full-integration.spec.js`) is the correct way to get programmatic access to the map in tests.
+
+### Known data bug (tracked in todo.MD)
+`assets/points/photos.geojson` feature index 748 is a blank record (`geometry: null`, all properties null). The schema test logs it but doesn't fail on it.
 
 ## Testing with MCP Browser
 
@@ -49,7 +86,7 @@ Note: The human developer doesn't experience this caching issue in their browser
 
 **CSS:** Feature-prefixed classes (`.polaroid-`, `.place-`, `.info-`). Mobile breakpoint at 700px.
 
-**Animation speeds:** Measured in milliseconds (e.g., 600000ms for typical journey). Different dash patterns per transport type.
+**Animation speeds:** Values in `geojsonStyles.js` are in km/h (e.g., `600000` = 600,000 km/h). At that speed a 1,000 km route takes ~6 seconds of real time. Different dash patterns per transport type.
 
 ## Code Style Guidelines
 
