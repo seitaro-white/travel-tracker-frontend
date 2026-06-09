@@ -1,5 +1,6 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
 import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer } from './src/features/geojson/geojsonService.js';
+import { createArcedFlightLayer } from './src/features/geojson/flightArcs.js';
 import { manageLayerVisibilityByZoom } from './src/utils/layerVisibility.js';
 import { animateMarkerAlongLine } from './src/features/animations/animateMarkerAlongLine.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
@@ -16,6 +17,10 @@ const STATIC_LINE_LAYERS = [
     { file: 'assets/lines/cycling_routes.geojson', style: LineStyles.cycling },
     { file: 'assets/lines/ferries.geojson', style: LineStyles.ferry },
 ];
+
+// Flight arcs are only meant to be glanceable from a zoomed-out view, so
+// they're hidden once you zoom in past this level (see manageLayerVisibilityByZoom).
+const FLIGHT_MAX_ZOOM = 9;
 
 // Point layers that should only be visible once zoomed in (zoom >= minZoom).
 const ZOOMED_POINT_LAYERS = [
@@ -172,20 +177,30 @@ async function setupMap() {
     // 2. Now start the main chained animation.
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
 
-    // 3. Preload the static lines BEFORE the crossfade. They aren't on the map
-    //    yet, so the fetch latency doesn't delay anything below.
+    // 3. Preload the static lines AND the faint flight arcs BEFORE the
+    //    crossfade. They aren't on the map yet, so the fetch latency doesn't
+    //    delay anything below. The flight arcs join the crossfade alongside the
+    //    other static lines.
     const staticLayers = await loadStaticLineLayers();
+    const flightLayer = await createArcedFlightLayer('assets/lines/flights.geojson', LineStyles.flight);
 
-    // 4. Crossfade: add the static lines and fade them in over 1s while the
-    //    animated lines fade out over the same 1s, so one set of lines visually
-    //    replaces the other. We wait the full second before continuing.
+    // 4. Crossfade: add the static lines (and flight arcs) and fade them in over
+    //    1s while the animated lines fade out over the same 1s, so one set of
+    //    lines visually replaces the other. We wait the full second before
+    //    continuing.
     staticLayers.forEach(layer => layer.addTo(map));
+    flightLayer.addTo(map);
     fadeOutLayers(animatedLayers);
-    fadeInLayers(staticLayers);
+    fadeInLayers([...staticLayers, flightLayer]);
     await delay(1000);
 
     // The animated lines are now invisible (opacity 0); remove them from the map.
     animatedLayers.forEach(layer => map.removeLayer(layer));
+
+    // Now that the flight arcs have faded in, hand them over to zoom-gating so
+    // they fade from view once the user zooms in past FLIGHT_MAX_ZOOM. The map
+    // starts zoomed out, so they stay visible until then.
+    manageLayerVisibilityByZoom(map, flightLayer, 0, FLIGHT_MAX_ZOOM);
 
     // 5. With the lines settled, bring in the markers with a drop-in animation.
     //    The body class scopes the drop to this initial mount (see markers.css);

@@ -1,0 +1,14 @@
+{
+"type": "FeatureCollection",
+"name": "flights",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "from": "HND", "to": "WKJ", "name": "Tokyo Haneda → Wakkanai" }, "geometry": { "type": "LineString", "coordinates": [ [ 139.779839, 35.553333 ], [ 141.800911, 45.404236 ] ] } },
+{ "type": "Feature", "properties": { "from": "HND", "to": "AKJ", "name": "Tokyo Haneda → Asahikawa" }, "geometry": { "type": "LineString", "coordinates": [ [ 139.779839, 35.553333 ], [ 142.447464, 43.670834 ] ] } },
+{ "type": "Feature", "properties": { "from": "HND", "to": "FUK", "name": "Tokyo Haneda → Fukuoka" }, "geometry": { "type": "LineString", "coordinates": [ [ 139.779839, 35.553333 ], [ 130.451027, 33.585904 ] ] } },
+{ "type": "Feature", "properties": { "from": "HND", "to": "TPE", "name": "Tokyo Haneda → Taipei Taoyuan" }, "geometry": { "type": "LineString", "coordinates": [ [ 139.779839, 35.553333 ], [ 121.233002, 25.077732 ] ] } },
+{ "type": "Feature", "properties": { "from": "NRT", "to": "ICN", "name": "Tokyo Narita → Seoul Incheon" }, "geometry": { "type": "LineString", "coordinates": [ [ 140.386353, 35.764702 ], [ 126.440681, 37.460191 ] ] } },
+{ "type": "Feature", "properties": { "from": "NRT", "to": "KMJ", "name": "Tokyo Narita → Kumamoto" }, "geometry": { "type": "LineString", "coordinates": [ [ 140.386353, 35.764702 ], [ 130.855011, 32.837269 ] ] } },
+{ "type": "Feature", "properties": { "from": "HND", "to": "CTS", "name": "Tokyo Haneda → Sapporo New Chitose" }, "geometry": { "type": "LineString", "coordinates": [ [ 139.779839, 35.553333 ], [ 141.692285, 42.775213 ] ] } }
+]
+}

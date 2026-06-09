@@ -49,5 +49,14 @@ export const LineStyles = {
     weight: 2.5,
     opacity: 0.9,
     dashArray: "10, 20"
+  },
+  // Arcs for past flights: a dashed light-blue hairline. Very thin so it stays
+  // understated, but fully opaque so it reads clearly. Only shown in the
+  // zoomed-out band (see flight zoom-gating in script.js).
+  flight: {
+    color: "#3fa9f5",
+    weight: 1,
+    opacity: 1,
+    dashArray: "4, 8"
   }
 };

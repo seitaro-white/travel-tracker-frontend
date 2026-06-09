@@ -64,7 +64,7 @@ Note: The human developer doesn't experience this caching issue in their browser
 
 **Feature-based module organization:**
 - `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker)
-- `src/features/geojson/` - GeoJSON fetching and Leaflet layer creation
+- `src/features/geojson/` - GeoJSON fetching and Leaflet layer creation, including `flightArcs.js` (synthesises curved flight lines from 2-point GeoJSON)
 - `src/features/markers/` - Photo, place, and info marker callbacks (onEachFeature/pointToLayer pattern)
 - `src/features/overlays/` - Overlay panel system including polaroid photo display
 - `src/utils/` - Generic, feature-agnostic map helpers (e.g. `layerVisibility.js`)
@@ -74,7 +74,9 @@ Note: The human developer doesn't experience this caching issue in their browser
 - Leaflet.MarkerCluster for clustering
 - leaflet.motion for line animations
 
-**Data:** GeoJSON files in `assets/points/` (photos, places, info) and `assets/lines/` (routes, animations)
+**Data:** GeoJSON files in `assets/points/` (photos, places, info) and `assets/lines/` (routes, animations, flights)
+
+**Flight arcs:** `assets/lines/flights.geojson` holds past flights as `LineString`s with exactly two coordinates (origin + destination airport, `[lng, lat]`). `flightArcs.js` reads these and synthesises a bowed arc per flight (quadratic Bézier offset perpendicular to the route midpoint — `ARC_CURVATURE`/`ARC_SEGMENTS` tune it); a straight 2-point line would otherwise render flat. The arcs join the intro crossfade in `script.js` and are zoom-gated to only show when zoomed out (≤ `FLIGHT_MAX_ZOOM`) via `manageLayerVisibilityByZoom`.
 
 ## Conventions
 
@@ -84,6 +86,7 @@ Note: The human developer doesn't experience this caching issue in their browser
 - Photos: `filename`, `description`, `timestamp`
 - Places: `placeList` (category), `Title`
 - Animations: `name`, `type`, `triggers` (UUID array), `uuid`
+- Flights: `from`, `to` (airport codes), `name` (human-readable route)
 
 **CSS:** Feature-prefixed classes (`.polaroid-`, `.place-`, `.info-`). Mobile breakpoint at 700px.
 
