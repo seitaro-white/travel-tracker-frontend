@@ -136,3 +136,27 @@
     font-weight: bold;
     font-size: 12px;
 }
+
+/* --- Intro marker drop-in --- */
+/* While `markers-dropping` is on <body>, freshly-mounted markers fall into place
+   from slightly above and fade in. script.js removes the class once the intro
+   drop has played, so later re-renders (e.g. clusters recalculating on zoom, or
+   place/info layers toggling at the zoom threshold) don't replay it.
+   We animate each marker's inner content element, never Leaflet's `_icon`
+   wrapper, whose transform Leaflet itself manages for positioning.
+   `both` fill mode holds the opacity-0 start state before the first frame so
+   markers don't flash at full opacity (including during each marker's staggered
+   delay), and the translateY(0) end state matches each element's normal resting
+   position. The per-marker animation-delay that creates the cascade is set
+   inline by staggerMarkerDrop() in script.js. */
+@keyframes marker-drop-in {
+    from { opacity: 0; transform: translateY(-22px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+body.markers-dropping .place-marker,
+body.markers-dropping .info-marker-icon,
+body.markers-dropping .custom-cluster-stack,
+body.markers-dropping .photo-marker-image {
+    animation: marker-drop-in 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.02) both;
+}

@@ -77,6 +77,40 @@ function fadeInLayers(layers) {
     })
 }
 
+// Resolves after `ms` milliseconds. CSS transitions are fire-and-forget, so we
+// use this to wait one out before starting the next stage of the intro.
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Staggers the marker drop-in into a top-to-bottom "wave". Each marker's
+// animation-delay scales with its vertical screen position, so markers near the
+// top fall first and the whole cascade always fits inside MAX_STAGGER no matter
+// how many markers there are. Must be called synchronously right after the
+// markers mount (before the next paint) so the delays land before the CSS
+// animation's first frame. Relies on `body.markers-dropping` being set so the
+// inner content elements are the ones carrying the animation (see markers.css).
+function staggerMarkerDrop() {
+    const MAX_STAGGER = 1.5; // seconds spanning the first to the last marker
+    const els = document.querySelectorAll(
+        '.markers-dropping .custom-cluster-stack, ' +
+        '.markers-dropping .place-marker, ' +
+        '.markers-dropping .info-marker-icon, ' +
+        '.markers-dropping .photo-marker-image'
+    );
+    if (!els.length) return;
+
+    // Measure each marker's vertical position, then map that range onto the
+    // delay window. (A single getBoundingClientRect pass; division guards
+    // against every marker sharing the same top.)
+    const tops = [...els].map(el => el.getBoundingClientRect().top);
+    const minTop = Math.min(...tops);
+    const span = Math.max(...tops) - minTop || 1;
+    els.forEach((el, i) => {
+        el.style.animationDelay = `${((tops[i] - minTop) / span) * MAX_STAGGER}s`;
+    });
+}
+
 // Helper function to fetch HTML content from a file.
 // Returns a Promise that resolves to the HTML string.
 async function fetchHtmlFile(filePath) {
@@ -106,18 +140,15 @@ async function setupLegend() {
     document.body.appendChild(legendContainer);
 }
 
-// Loads each static line layer, adds them to the map in order, and fades them in.
-async function addStaticLineLayers(map) {
-    // Load all layers in parallel; Promise.all preserves array order so the
-    // draw/z-order matches STATIC_LINE_LAYERS.
-    const layers = await Promise.all(
+// Loads each static line layer in parallel, but does NOT add them to the map.
+// Promise.all preserves array order so the eventual draw/z-order matches
+// STATIC_LINE_LAYERS. Keeping load separate from display lets the caller add
+// and fade them in at the exact moment the animated lines start fading out,
+// so the two form a single simultaneous crossfade.
+async function loadStaticLineLayers() {
+    return Promise.all(
         STATIC_LINE_LAYERS.map(({ file, style }) => createGeoJsonLineLayer(file, style))
     );
-
-    // Add the static layers to the map (initially rendered with opacity 0)...
-    layers.forEach(layer => layer.addTo(map));
-    // ...then trigger their fade-in.
-    fadeInLayers(layers);
 }
 
 // Loads each zoom-gated point layer and wires up its zoom-based visibility.
@@ -138,30 +169,52 @@ async function setupMap() {
     // 1. Animate the incoming flight marker first
     await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
 
-    // 2. Now start the main chained animation
+    // 2. Now start the main chained animation.
     const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
-    // Once the animation finishes, fade it out.
+
+    // 3. Preload the static lines BEFORE the crossfade. They aren't on the map
+    //    yet, so the fetch latency doesn't delay anything below.
+    const staticLayers = await loadStaticLineLayers();
+
+    // 4. Crossfade: add the static lines and fade them in over 1s while the
+    //    animated lines fade out over the same 1s, so one set of lines visually
+    //    replaces the other. We wait the full second before continuing.
+    staticLayers.forEach(layer => layer.addTo(map));
     fadeOutLayers(animatedLayers);
+    fadeInLayers(staticLayers);
+    await delay(1000);
 
-    // 3. Add the static line layers (faded in).
-    await addStaticLineLayers(map);
+    // The animated lines are now invisible (opacity 0); remove them from the map.
+    animatedLayers.forEach(layer => map.removeLayer(layer));
 
-    // 4. Add the zoom-gated info and place point layers.
+    // 5. With the lines settled, bring in the markers with a drop-in animation.
+    //    The body class scopes the drop to this initial mount (see markers.css);
+    //    we remove it once the drop has played so later re-renders (e.g. clusters
+    //    recalculating on zoom) don't replay it.
+    document.body.classList.add('markers-dropping');
+
+    // The zoom-gated info and place points, then the photo clusters.
     await addZoomedPointLayers(map);
 
-    // After animation finishes, show the intro overlay panel.
-    // We fetch the HTML from the new file and pass it to showOverlayPanel.
-    const introHtml = await fetchHtmlFile('introOverlay.html');
-    // The legend is now always visible, so we no longer need a callback here.
-    showOverlayPanel(introHtml);
-
-    // Add photo clusters
     const photosPointLayer = await addClusteredGeoJsonPointLayer(
         'assets/points/photos.geojson',
         onEachPhotoFeature,
         pointToLayerForPhotos);
-
     photosPointLayer.addTo(map);
+
+    // Assign the staggered delays synchronously now that the markers are mounted,
+    // so the cascade is set before the animation's first frame.
+    staggerMarkerDrop();
+
+    // Wait out the cascade (1.5s stagger window + 0.45s drop), then unscope it.
+    await delay(2000);
+    document.body.classList.remove('markers-dropping');
+
+    // 6. Finally, once the lines and markers are in place, show the intro overlay.
+    // We fetch the HTML from the new file and pass it to showOverlayPanel.
+    const introHtml = await fetchHtmlFile('introOverlay.html');
+    // The legend is now always visible, so we no longer need a callback here.
+    showOverlayPanel(introHtml);
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.
