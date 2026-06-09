@@ -1,5 +1,3 @@
-import { AnimatedLineStyles } from './geojsonStyles.js';
-
 // Function to fetch GeoJSON data
 export async function fetchGeoJson(filePath) {
     const response = await fetch(filePath);
@@ -34,10 +32,10 @@ export async function createGeoJsonPointLayer(filePath, onEachFeatureCallback, p
         layerOptions.pointToLayer = pointToLayerCallback;
     }
 
-    // Create the GeoJSON layer and add it to the map
+    // Create the GeoJSON layer (not added to the map here; the caller does that).
     const layer = L.geoJSON(geojsonData, layerOptions)
 
-    // Return the created layer in an array (for consistency with previous API)
+    // Return the created layer.
     return layer;
 }
 
@@ -120,70 +118,6 @@ export async function addClusteredGeoJsonPointLayer(filePath, onEachFeatureCallb
 
 
 /**
- * Animate features in a chained sequence using motion speed.
- *
- * This function:
- *   1. Fetches the GeoJSON.
- *   2. Builds a map of features keyed on each feature's fid.
- *   3. Finds the starting feature with name "Initial Haneda".
- *   4. Animates it using L.motion.polyline with a speed (in km/h) and waits for the animation to finish.
- *   5. Once done, recursively triggers any features indicated in its triggers array.
- *
- * @param {Object} map - The Leaflet map instance.
- * @param {string} filePath - Path to the GeoJSON file.
- * @param {Object} styleOptions - Style for the animated polyline.
- * @param {number} defaultSpeedKmH - Default motion speed in km/h if not specified in feature.
- */
-export async function animateChainedGeoJson(
-  map,
-  filePath,
-  styleMap = AnimatedLineStyles
-) {
-  const geojson = await fetchGeoJson(filePath);
-  const features = geojson.features;
-  const byUUID = new Map(features.map(f => [f.properties.uuid, f]));
-  const initialFeature = features.find(f => f.properties.name === "Initial Haneda");
-  const invisibleIcon = L.divIcon({ html: "", className: "leaflet-motion-invisible-marker", iconSize: [0,0] });
-
-  async function play(feature) {
-    // pick this feature’s config or fall back
-    const cfg = styleMap[feature.properties.type] || styleMap.default;
-    // pull speed out, the rest is pure path styling
-    const { speed: motionSpeed, ...pathStyle } = cfg;
-
-    // break into one or more segments
-    const segments = feature.geometry.type === "MultiLineString"
-      ? feature.geometry.coordinates
-      : [feature.geometry.coordinates];
-
-    // animate each segment
-    await Promise.all(segments.map(coords => {
-      const latLngs = coords.map(c => [c[1], c[0]]);
-      const layer = L.motion
-        .polyline(
-          latLngs,
-          pathStyle,                    // only color/weight/opacity…
-          { auto: true, speed: motionSpeed }, // …and speed in motion options
-          { icon: invisibleIcon }
-        )
-        .addTo(map);
-      return new Promise(r => layer.once(L.Motion.Event.Ended, r));
-    }));
-
-    // then recurse to any triggered children
-    const triggers = feature.properties.triggers || [];
-    await Promise.all(triggers.map(id =>
-      byUUID.has(id) ? play(byUUID.get(id)) : Promise.resolve()
-    ));
-  }
-
-  if (!initialFeature) {
-    throw new Error('No initial feature with Name "Initial Haneda" found.');
-  }
-  await play(initialFeature);
-}
-
-/**
  * Creates a GeoJSON line layer using the provided file path and style,
  * but does not add it to the map.
  *
@@ -192,9 +126,8 @@ export async function animateChainedGeoJson(
  * @returns {Promise<Layer>} - A promise resolving to the created GeoJSON layer.
  */
 export async function createGeoJsonLineLayer(filePath, style) {
-    // Fetch the GeoJSON data.
-    const response = await fetch(filePath);
-    const geojson = await response.json();
+    // Fetch the GeoJSON data (fetchGeoJson handles HTTP and JSON-parse errors).
+    const geojson = await fetchGeoJson(filePath);
     // Create the layer using Leaflet's geoJSON factory.
     const layer = L.geoJSON(geojson, {
         style: style
@@ -249,10 +182,8 @@ export function manageLayerVisibilityByZoom(map, layer, minZoom) {
  *
  * @param {L.Map} map - The Leaflet map instance.
  * @param {string} filePath - Path to the GeoJSON file (should contain a single LineString).
- * @param {L.DivIcon|L.Icon} [icon] - Optional custom icon for the marker.
- * @param {number} [speed=600000] - Animation speed (meters per hour).
- * @param {string} [easing="easeInOutQuad"] - Animation easing function.
- * @param {string} [svgPath="/airplane.svg"] - Optional path to the SVG file in public directory.
+ * @param {string} svgPath - Path to the SVG file used as the moving marker icon.
+ * @param {number} [speed=1500000] - Animation speed (meters per hour).
  * @returns {Promise<void>}
  */
 export async function animateMarkerAlongLine(map, filePath, svgPath, speed = 1500000) {
