@@ -1,12 +1,27 @@
 import { LineStyles } from './src/features/geojson/geojsonStyles.js';
-// Import the new function from geojsonService.js
-import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer, manageLayerVisibilityByZoom, animateMarkerAlongLine  } from './src/features/geojson/geojsonService.js';
+import { createGeoJsonLineLayer, addClusteredGeoJsonPointLayer, createGeoJsonPointLayer } from './src/features/geojson/geojsonService.js';
+import { manageLayerVisibilityByZoom } from './src/utils/layerVisibility.js';
+import { animateMarkerAlongLine } from './src/features/animations/animateMarkerAlongLine.js';
 import { animateChainedGeoJson } from './src/features/animations/animateChainedFeatures.js';
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer.js';
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
-// Import the new functions for the places layer.
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer.js';
-import { showOverlayPanel } from './src/features/overlays/overlayPanel.js'; // updated import
+import { showOverlayPanel } from './src/features/overlays/overlayPanel.js';
+
+// The static (non-animated) line layers, declared as data so they can be
+// loaded, added, and faded in with a single loop below.
+const STATIC_LINE_LAYERS = [
+    { file: 'assets/lines/public_transport.geojson', style: LineStyles.publicTransport },
+    { file: 'assets/lines/walking_routes.geojson', style: LineStyles.walking },
+    { file: 'assets/lines/cycling_routes.geojson', style: LineStyles.cycling },
+    { file: 'assets/lines/ferries.geojson', style: LineStyles.ferry },
+];
+
+// Point layers that should only be visible once zoomed in (zoom >= minZoom).
+const ZOOMED_POINT_LAYERS = [
+    { file: 'assets/points/information.geojson', onEachFeature: onEachInfoFeature, pointToLayer: pointToLayerForInfo, minZoom: 10 },
+    { file: 'assets/points/places.geojson', onEachFeature: onEachPlaceFeature, pointToLayer: pointToLayerForPlaces, minZoom: 10 },
+];
 
 // Function to initialize the map with responsive center/zoom.
 function initializeMap(mapId) {
@@ -69,31 +84,56 @@ async function fetchHtmlFile(filePath) {
     return await response.text();
 }
 
-// Main function to set up the map and layers.
-async function setupMap() {
-    const map = initializeMap('map');
-
+// Builds the always-visible legend (a hover icon + the mini map key) and adds
+// it to the page. The key markup lives in miniMapKey.html.
+async function setupLegend() {
     // Create a container for the legend icon and the map key.
     // This container will be positioned in the top-right of the screen.
     const legendContainer = document.createElement('div');
     legendContainer.id = 'legend-container';
     legendContainer.className = 'legend-container';
 
-    // Create the legend icon that the user will hover over.
-    // We're using a Font Awesome icon here.
+    // Create the legend icon that the user will hover over (a Font Awesome icon).
     const legendIcon = document.createElement('i');
     legendIcon.className = 'fa fa-map-o legend-icon';
-
-    // Add the icon to our container.
     legendContainer.appendChild(legendIcon);
 
-    // Fetch the HTML for the mini map key.
+    // Fetch the mini map key HTML and insert it right after the icon.
     const miniMapKeyHtml = await fetchHtmlFile('miniMapKey.html');
-    // Add the map key HTML into the container, right after the icon.
     legendContainer.insertAdjacentHTML('beforeend', miniMapKeyHtml);
 
     // Add the complete legend container (with icon and hidden key) to the page.
     document.body.appendChild(legendContainer);
+}
+
+// Loads each static line layer, adds them to the map in order, and fades them in.
+async function addStaticLineLayers(map) {
+    // Load all layers in parallel; Promise.all preserves array order so the
+    // draw/z-order matches STATIC_LINE_LAYERS.
+    const layers = await Promise.all(
+        STATIC_LINE_LAYERS.map(({ file, style }) => createGeoJsonLineLayer(file, style))
+    );
+
+    // Add the static layers to the map (initially rendered with opacity 0)...
+    layers.forEach(layer => layer.addTo(map));
+    // ...then trigger their fade-in.
+    fadeInLayers(layers);
+}
+
+// Loads each zoom-gated point layer and wires up its zoom-based visibility.
+async function addZoomedPointLayers(map) {
+    for (const { file, onEachFeature, pointToLayer, minZoom } of ZOOMED_POINT_LAYERS) {
+        const layer = await createGeoJsonPointLayer(file, onEachFeature, pointToLayer);
+        // Show the layer only when the zoom level is at or above minZoom.
+        manageLayerVisibilityByZoom(map, layer, minZoom);
+    }
+}
+
+// Main function to set up the map and layers.
+async function setupMap() {
+    const map = initializeMap('map');
+
+    await setupLegend();
 
     // 1. Animate the incoming flight marker first
     await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
@@ -103,43 +143,11 @@ async function setupMap() {
     // Once the animation finishes, fade it out.
     fadeOutLayers(animatedLayers);
 
+    // 3. Add the static line layers (faded in).
+    await addStaticLineLayers(map);
 
-    // Create static GeoJSON line layers without adding them to the map.
-    const staticLayer1 = await createGeoJsonLineLayer('assets/lines/public_transport.geojson', LineStyles.publicTransport);
-    const staticLayer2 = await createGeoJsonLineLayer('assets/lines/walking_routes.geojson', LineStyles.walking);
-    const staticLayer3 = await createGeoJsonLineLayer('assets/lines/cycling_routes.geojson', LineStyles.cycling);
-    const staticLayer4 = await createGeoJsonLineLayer('assets/lines/ferries.geojson', LineStyles.ferry);
-
-    // Add the static layers to the map. Assume they are initially rendered with opacity 0.
-    staticLayer1.addTo(map);
-    staticLayer2.addTo(map);
-    staticLayer3.addTo(map);
-    staticLayer4.addTo(map);
-
-    // Trigger their fade-in.
-    fadeInLayers([staticLayer1, staticLayer2, staticLayer3, staticLayer4]);
-
-
-    // Add info layers
-    const infoPointLayer = await createGeoJsonPointLayer(
-        'assets/points/information.geojson',
-        onEachInfoFeature,
-        pointToLayerForInfo
-        );
-
-    // Use the new generic function to manage the info layer's visibility.
-    // This will show the layer only when the zoom level is 10 or higher.
-    manageLayerVisibilityByZoom(map, infoPointLayer, 10);
-
-    // Add places layer
-    const placesPointLayer = await createGeoJsonPointLayer(
-        'assets/points/places.geojson',
-        onEachPlaceFeature,
-        pointToLayerForPlaces
-    );
-
-    // This will show the layer only when the zoom level is 10 or higher.
-    manageLayerVisibilityByZoom(map, placesPointLayer, 10);
+    // 4. Add the zoom-gated info and place point layers.
+    await addZoomedPointLayers(map);
 
     // After animation finishes, show the intro overlay panel.
     // We fetch the HTML from the new file and pass it to showOverlayPanel.
@@ -154,8 +162,6 @@ async function setupMap() {
         pointToLayerForPhotos);
 
     photosPointLayer.addTo(map);
-
-
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.
