@@ -8,6 +8,7 @@ import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/marker
 import { onEachInfoFeature, pointToLayerForInfo} from './src/features/markers/infoViewer.js';
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer.js';
 import { showOverlayPanel } from './src/features/overlays/overlayPanel.js';
+import { showPolaroidStack } from './src/features/carousel/polaroidStack.js';
 
 // The static (non-animated) line layers, declared as data so they can be
 // loaded, added, and faded in with a single loop below.
@@ -228,8 +229,11 @@ async function setupMap() {
     // 6. Finally, once the lines and markers are in place, show the intro overlay.
     // We fetch the HTML from the new file and pass it to showOverlayPanel.
     const introHtml = await fetchHtmlFile('introOverlay.html');
-    // The legend is now always visible, so we no longer need a callback here.
-    showOverlayPanel(introHtml);
+
+    // 7. The pile of favourite photos is the closing beat of the intro: it
+    //    slides in from the left once the reader dismisses the overlay, and
+    //    then stays for the rest of the session.
+    showOverlayPanel(introHtml, () => showPolaroidStack(map));
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.

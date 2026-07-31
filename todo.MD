@@ -33,6 +33,8 @@ S
 ### New Features
 
 - [ ] Plane lines, for various air travel between places (transparent if possible)
-- [ ] Carousel of best photos
+- [x] Carousel of best photos — pile of mini polaroids, bottom-left (centred on mobile).
+      Membership from the `priority` field in photos.geojson. Tap the top card to fly the
+      map there and open the blow-up.
 - [ ] Can we get the moving lines to fade out as the main lines come in? 
 - [ ] New base map (I can pay for watercolour) and like, more drawing like lines would be great rather than the strict data ones we have now

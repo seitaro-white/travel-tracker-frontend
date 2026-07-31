@@ -1,0 +1,366 @@
+/* --- Favourite photo carousel: a pile of mini polaroids ---------------------
+ *
+ * A stack of four cards sitting in the map's bottom-left corner. Only the top
+ * card's photo is really visible; the three behind it peek out as askew white
+ * edges, which is what makes it read as a pile of prints on a table.
+ *
+ * Every colour, shadow and easing value here is taken from the app's existing
+ * language rather than invented: the card is the .polaroid recipe (white on a
+ * #E0E0E0 hairline with a 5px 5px 15px shadow), the controls are the
+ * .legend-icon recipe, and all motion uses the cubic-bezier(0.18, 0.89, 0.32,
+ * 1.02) curve the intro and overlays already use.
+ * ------------------------------------------------------------------------- */
+
+.polaroid-stack {
+    /* Card geometry. Everything below is derived from these, so changing the
+       card width rescales the whole pile. */
+    --pm-card: 260px;   /* total card width, border to border */
+    --pm-pad: 10px;     /* white border on the top and sides */
+    --pm-chin: 38px;    /* the wider bottom border a polaroid has */
+    --pm-step: 7px;     /* how far each card behind is offset from the last */
+    --pm-lift: 20px;    /* headroom the offset cards need above and right */
+
+    /* The app's signature easing, shared with the intro and overlay panels. */
+    --pm-ease: cubic-bezier(0.18, 0.89, 0.32, 1.02);
+
+    /* How far the pile slides sideways. Expanded is the default (0); the
+       collapsed and hidden states below override it. Keeping this in a variable
+       means one transition on one element covers every state, so the pile never
+       fights itself over which transform wins. */
+    --pm-slide: 0px;
+
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    /* Above the map and the legend (1001), below the polaroid blow-up (2000)
+       and the intro panel (3000), so opening a photo dims the pile behind it. */
+    z-index: 1002;
+    box-sizing: border-box;
+}
+
+.polaroid-stack *,
+.polaroid-stack *::before,
+.polaroid-stack *::after {
+    box-sizing: border-box;
+}
+
+/* Collapsed: slide left until only the pile's right-hand edge and its drawer
+   handle remain on screen — about 48px, which is the card edges plus the tab.
+   The handle is what makes this state recoverable: it rides on the pile's right
+   edge, so it is exactly the part that stays visible. */
+.polaroid-stack.is-collapsed {
+    --pm-slide: calc(-100% + 6px);
+}
+
+/* The mount state: parked just past the collapsed position so the pile can
+   slide in from off-screen when the intro overlay is dismissed. Declared last
+   of the three so it wins while both classes are briefly present. */
+.polaroid-stack.is-hidden {
+    --pm-slide: calc(-100% - 80px);
+}
+
+/* The element that actually moves. Separating it from the positioner above
+   keeps the sideways slide independent of the vertical centring the mobile
+   breakpoint applies, so the two never have to be composed into one transform. */
+.polaroid-stack-slider {
+    transform: translateX(var(--pm-slide));
+    transition: transform 620ms var(--pm-ease), opacity 400ms ease-out;
+}
+
+.polaroid-stack.is-hidden .polaroid-stack-slider {
+    opacity: 0;
+}
+
+/* --- The pile ------------------------------------------------------------- */
+
+/* All four cards are absolutely positioned against this box's bottom-left
+   corner. The padding on the top and right is the headroom the offset cards
+   need, since each one behind sits a little up and to the right. */
+.polaroid-stack-cards {
+    position: relative;
+    padding: var(--pm-lift) var(--pm-lift) 0 0;
+    width: calc(var(--pm-card) + var(--pm-lift));
+    /* Card height works out as: square image window (card width less its side
+       borders) + the top border + the chin. */
+    height: calc(var(--pm-card) - var(--pm-pad) + var(--pm-chin) + var(--pm-lift));
+}
+
+/* A mini polaroid: the same white frame and hairline as the full-size .polaroid
+   in overlays.css, but with no caption and no date stamp. Those are held back
+   as the reward for tapping through to the blow-up. */
+.polaroid-mini {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: var(--pm-card);
+    margin: 0;
+    padding: var(--pm-pad) var(--pm-pad) var(--pm-chin);
+    background-color: #fff;
+    border: 1px solid #E0E0E0;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    /* Reset the button element's own styling; the rules above are the design. */
+    appearance: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    /* Horizontal drags on the top card are ours, not the browser's. */
+    touch-action: none;
+    transition: transform 420ms var(--pm-ease), opacity 420ms ease-out;
+}
+
+/* The square image window. A real Polaroid's picture area is very nearly
+   square, and it also makes all 47 cards identical in size despite the photos
+   themselves running from 0.70 to 1.68 in aspect ratio, so the pile's peeking
+   edges stay perfectly still while you cycle. */
+.polaroid-mini-window {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    /* Shows through until the photo decodes, so a card is never a white hole. */
+    background-color: #ece9e4;
+}
+
+.polaroid-mini-window img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Centre-crop to the square. The blow-up shows the full uncropped photo. */
+    object-fit: cover;
+}
+
+/* Resting position for each depth. The rotations are a fixed list keyed to
+   depth rather than randomised, so the pile's silhouette is a designed shape
+   that looks the same every visit while the photos inside it shuffle.
+   Each card behind steps up and to the right, away from the bottom-left anchor.
+
+   Depth 0 folds in --pm-drag so a finger dragging the top card moves it without
+   JavaScript having to rebuild the whole transform (and duplicate the rotation
+   here in script). */
+.polaroid-mini[data-depth="0"] {
+    transform: translate(var(--pm-drag, 0px), 0) rotate(1.5deg);
+    z-index: 4;
+    cursor: pointer;
+}
+
+.polaroid-mini[data-depth="1"] {
+    transform: translate(var(--pm-step), calc(-1 * var(--pm-step))) rotate(-2deg) scale(0.99);
+    z-index: 3;
+}
+
+.polaroid-mini[data-depth="2"] {
+    transform: translate(calc(2 * var(--pm-step)), calc(-1.9 * var(--pm-step))) rotate(3deg) scale(0.98);
+    z-index: 2;
+}
+
+.polaroid-mini[data-depth="3"] {
+    transform: translate(calc(2.9 * var(--pm-step)), calc(-2.7 * var(--pm-step))) rotate(-1deg) scale(0.97);
+    z-index: 1;
+}
+
+/* Only the top card is interactive. The ones behind must not swallow clicks
+   meant for it, or intercept a drag that strays over their edges. */
+.polaroid-mini:not([data-depth="0"]) {
+    pointer-events: none;
+}
+
+.polaroid-mini[data-depth="0"]:hover {
+    box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
+}
+
+.polaroid-mini:focus-visible {
+    outline: 3px solid #ff6b35;
+    outline-offset: 3px;
+}
+
+/* While a finger is down, the card must track it exactly rather than easing
+   towards it. */
+.polaroid-mini.is-dragging {
+    transition: none;
+    cursor: grabbing;
+}
+
+/* Used for a single frame to move a card without animating it: how the card
+   that just flew off the front gets planted at the back of the pile unseen. */
+.polaroid-mini.is-instant {
+    transition: none;
+    animation: none;
+}
+
+/* --- Cycling motion ------------------------------------------------------- */
+
+/* Going forward: the top card lifts, swings off to the left and fades, while
+   the three behind it step forward into its place. It starts from wherever the
+   drag left it (--pm-drag), so a flick continues into the throw rather than
+   snapping back to centre first. */
+@keyframes polaroid-mini-leave {
+    from {
+        transform: translate(var(--pm-drag, 0px), 0) rotate(1.5deg);
+        opacity: 1;
+    }
+    to {
+        transform: translate(-46%, 10%) rotate(-9deg) scale(0.9);
+        opacity: 0;
+    }
+}
+
+/* Going back: the same path walked the other way. The card that was flicked
+   away sweeps back in from the left and settles on top of the pile. */
+@keyframes polaroid-mini-enter {
+    from {
+        transform: translate(-46%, 10%) rotate(-9deg) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0) rotate(1.5deg);
+        opacity: 1;
+    }
+}
+
+/* The leaving card has to stay above the card being revealed beneath it, so it
+   sits one level above every resting depth while it flies. */
+.polaroid-mini.is-leaving {
+    z-index: 5;
+    animation: polaroid-mini-leave 420ms var(--pm-ease) forwards;
+}
+
+.polaroid-mini.is-entering {
+    animation: polaroid-mini-enter 420ms var(--pm-ease);
+}
+
+/* --- Controls ------------------------------------------------------------- */
+
+/* One quiet row beneath the pile: step back and step forward, kept as a tight
+   pair so they read as one control. Keeping the chrome off the cards leaves the
+   photos completely unobstructed, which is the whole point of the feature. */
+.polaroid-stack-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    transition: visibility 0s linear 0s;
+}
+
+/* Collapsed, the step buttons have travelled off-screen with the pile. Hiding
+   them once the slide finishes also takes them out of the tab order, so a
+   collapsed pile can't be focused into. The delay lets them visibly travel off
+   rather than blinking out. */
+.polaroid-stack.is-collapsed .polaroid-stack-bar {
+    visibility: hidden;
+    transition: visibility 0s linear 620ms;
+}
+
+/* The chrome recipe from .legend-icon, so the carousel's controls and the map
+   key's icon are visibly the same family of object. */
+.polaroid-stack-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    appearance: none;
+    font-family: inherit;
+    font-size: 17px;
+    line-height: 1;
+    color: #333;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.polaroid-stack-button:hover {
+    color: #ff6b35;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.polaroid-stack-button:active {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.polaroid-stack-button:focus-visible {
+    outline: 3px solid #ff6b35;
+    outline-offset: 2px;
+}
+
+/* The drawer handle: a tab riding on the pile's right edge, shaped like
+   something you'd pinch to pull the pile in and out. Deliberately a different
+   shape from the round step buttons so its chevron can't be mistaken for
+   "previous", and positioned on the right edge precisely because that is the
+   part of the pile that stays on screen when collapsed. */
+.polaroid-stack-handle {
+    position: absolute;
+    /* Flush against the outside of the pile's right edge. */
+    left: 100%;
+    top: 50%;
+    width: 22px;
+    height: 58px;
+    /* Above every card, including one in flight. */
+    z-index: 6;
+    /* Rounded only on the outer side, so it reads as attached to the pile. */
+    border-radius: 0 8px 8px 0;
+    transform: translateY(-50%);
+}
+
+.polaroid-stack-handle:hover {
+    /* Overrides the step buttons' scale, which would detach the tab from the
+       pile's edge. */
+    transform: translateY(-50%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Collapsed, the visible card edges are a second, larger target for the same
+   job as the handle. */
+.polaroid-stack.is-collapsed .polaroid-stack-cards {
+    cursor: pointer;
+}
+
+/* --- Mobile --------------------------------------------------------------- */
+
+@media (max-width: 700px) {
+    .polaroid-stack {
+        --pm-card: 200px;
+        --pm-step: 6px;
+        --pm-lift: 16px;
+        /* Expanded, the pile sits centred rather than in a corner: on a narrow
+           screen a corner-anchored pile is neither out of the way nor properly
+           presented. The positioner stays anchored left so that the collapsed
+           state is still a plain slide to the left edge. */
+        --pm-slide: calc(50vw - 50% - 20px);
+        bottom: auto;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    /* Collapsed and hidden are absolute positions, so they must not inherit the
+       centring offset above. */
+    .polaroid-stack.is-collapsed {
+        --pm-slide: calc(-100% + 6px);
+    }
+
+    .polaroid-stack.is-hidden {
+        --pm-slide: calc(-100% - 80px);
+    }
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+
+/* Cards change place instantly and the pile appears without sliding. The
+   fly-to is handled in script, where flyTo is swapped for a direct setView. */
+@media (prefers-reduced-motion: reduce) {
+    .polaroid-stack-slider,
+    .polaroid-mini,
+    .polaroid-stack-button {
+        transition: none;
+    }
+
+    .polaroid-mini.is-leaving,
+    .polaroid-mini.is-entering {
+        animation: none;
+    }
+}
