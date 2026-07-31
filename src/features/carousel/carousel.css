@@ -103,8 +103,14 @@
     font: inherit;
     color: inherit;
     text-align: left;
-    /* Horizontal drags on the top card are ours, not the browser's. */
+    /* Horizontal drags on the top card are ours, not the browser's: touch-action
+       stops touch scrolling claiming them, and user-select stops a mouse drag
+       turning into a text selection. The photo also carries draggable="false"
+       (see buildCard) — without it Chromium starts a native image drag and
+       cancels the gesture one frame in. */
     touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
     transition: transform 420ms var(--pm-ease), opacity 420ms ease-out;
 }
 
@@ -204,19 +210,6 @@
     }
 }
 
-/* Going back: the same path walked the other way. The card that was flicked
-   away sweeps back in from the left and settles on top of the pile. */
-@keyframes polaroid-mini-enter {
-    from {
-        transform: translate(-46%, 10%) rotate(-9deg) scale(0.9);
-        opacity: 0;
-    }
-    to {
-        transform: translate(0, 0) rotate(1.5deg);
-        opacity: 1;
-    }
-}
-
 /* The leaving card has to stay above the card being revealed beneath it, so it
    sits one level above every resting depth while it flies. */
 .polaroid-mini.is-leaving {
@@ -224,8 +217,16 @@
     animation: polaroid-mini-leave 420ms var(--pm-ease) forwards;
 }
 
-.polaroid-mini.is-entering {
-    animation: polaroid-mini-enter 420ms var(--pm-ease);
+/* Going back has no keyframe. The card being pulled in tracks a finger that can
+   slow down, stop, and reverse, which a keyframe cannot follow — so script sets
+   its transform frame by frame (see entryTransform in polaroidStack.js) and this
+   rule only lifts it above the pile it is landing on. Letting go clears the
+   inline transform, and .polaroid-mini's own transition carries it the rest of
+   the way to whichever depth it has been given. */
+.polaroid-mini.is-incoming {
+    z-index: 5;
+    /* Mid-flight it is not a target, no matter which depth it is nominally at. */
+    pointer-events: none;
 }
 
 /* --- Controls ------------------------------------------------------------- */
@@ -250,49 +251,64 @@
     transition: visibility 0s linear 620ms;
 }
 
-/* The chrome recipe from .legend-icon, so the carousel's controls and the map
-   key's icon are visibly the same family of object. */
-.polaroid-stack-button {
+/* Shared geometry and focus treatment for both controls. Their surfaces differ
+   completely — the steps are bare glyphs, the handle is a solid tab — so only
+   what they genuinely have in common lives here. */
+.polaroid-stack-step,
+.polaroid-stack-handle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
     padding: 0;
     appearance: none;
     font-family: inherit;
-    font-size: 17px;
     line-height: 1;
-    color: #333;
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
 
-.polaroid-stack-button:hover {
-    color: #ff6b35;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transform: scale(1.05);
-}
-
-.polaroid-stack-button:active {
-    transform: scale(1);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.polaroid-stack-button:focus-visible {
+.polaroid-stack-step:focus-visible,
+.polaroid-stack-handle:focus-visible {
     outline: 3px solid #ff6b35;
     outline-offset: 2px;
 }
 
+/* The step arrows: glyph only, no box. They sit directly on the map, so they get
+   a white halo instead of a panel — enough to stay legible over both the pale
+   land and the grey sea without adding another floating rectangle to a corner
+   that already has a pile of photos in it. */
+.polaroid-stack-step {
+    width: 30px;
+    height: 30px;
+    font-size: 28px;
+    color: #4a4a4a;
+    background: none;
+    border: none;
+    text-shadow:
+        0 0 4px rgba(255, 255, 255, 0.95),
+        0 0 10px rgba(255, 255, 255, 0.8),
+        0 1px 2px rgba(255, 255, 255, 0.95);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.polaroid-stack-step:hover {
+    color: #ff6b35;
+    transform: scale(1.15);
+}
+
+.polaroid-stack-step:active {
+    transform: scale(1);
+}
+
 /* The drawer handle: a tab riding on the pile's right edge, shaped like
-   something you'd pinch to pull the pile in and out. Deliberately a different
-   shape from the round step buttons so its chevron can't be mistaken for
-   "previous", and positioned on the right edge precisely because that is the
-   part of the pile that stays on screen when collapsed. */
+   something you'd pinch to pull the pile in and out. It keeps a solid surface
+   while the step arrows are bare glyphs — partly so its chevron can't be
+   mistaken for "previous", and partly because when the pile is collapsed this
+   tab is the only thing left on screen, so it has to hold its own against the
+   map behind it. Its chrome is the .legend-icon recipe, making it visibly the
+   same family of object as the map key's icon.
+
+   It is on the right edge precisely because that is the part of the pile that
+   stays visible once everything else has slid away. */
 .polaroid-stack-handle {
     position: absolute;
     /* Flush against the outside of the pile's right edge. */
@@ -302,16 +318,20 @@
     height: 58px;
     /* Above every card, including one in flight. */
     z-index: 6;
+    font-size: 17px;
+    color: #333;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     /* Rounded only on the outer side, so it reads as attached to the pile. */
     border-radius: 0 8px 8px 0;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-50%);
+    transition: box-shadow 0.2s ease, color 0.2s ease;
 }
 
 .polaroid-stack-handle:hover {
-    /* Overrides the step buttons' scale, which would detach the tab from the
-       pile's edge. */
-    transform: translateY(-50%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    color: #ff6b35;
+    box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Collapsed, the visible card edges are a second, larger target for the same
@@ -355,12 +375,12 @@
 @media (prefers-reduced-motion: reduce) {
     .polaroid-stack-slider,
     .polaroid-mini,
-    .polaroid-stack-button {
+    .polaroid-stack-step,
+    .polaroid-stack-handle {
         transition: none;
     }
 
-    .polaroid-mini.is-leaving,
-    .polaroid-mini.is-entering {
+    .polaroid-mini.is-leaving {
         animation: none;
     }
 }

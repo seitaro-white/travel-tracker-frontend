@@ -19,6 +19,21 @@ const CYCLE_MS = 420;
 const DRAG_COMMIT_RATIO = 0.25;
 // Pointer movement under this many pixels counts as a tap rather than a sweep.
 const TAP_SLOP_PX = 8;
+// How far a drag has to travel to pull an incoming card all the way home, as a
+// fraction of card width. Matches the distance the leaving card covers in the
+// polaroid-mini-leave keyframe, so going back retraces going forward.
+const ENTRY_TRAVEL_RATIO = 0.46;
+// Where an incoming card waits before it is pulled in: off to the left, tilted
+// and slightly shrunk. Must agree with the end of polaroid-mini-leave, since
+// this is the same resting place a flicked card was thrown to.
+const ENTRY_START = { x: -46, y: 10, rotate: -9, scale: 0.9 };
+// Where it lands: the resting look of a depth-0 card (see carousel.css).
+const ENTRY_END = { x: 0, y: 0, rotate: 1.5, scale: 1 };
+// How much of the journey an incoming card spends fading up. Kept short on
+// purpose: a print is an opaque object, so a card still half transparent halfway
+// in reads as a crossfade rather than something being pulled into place. It only
+// fades over the first stretch, where it is mostly off-screen anyway.
+const ENTRY_FADE_RATIO = 0.3;
 // Town/district level: close enough to place the photo, wide enough for context.
 const FLY_ZOOM = 13;
 const FLY_SECONDS = 1.2;
@@ -33,20 +48,41 @@ function buildCard() {
     // hold its shape while the photo is still loading.
     const frame = document.createElement('span');
     frame.className = 'polaroid-mini-window';
-    frame.appendChild(document.createElement('img'));
+
+    const image = document.createElement('img');
+    // Without this, pressing and moving on the photo starts Chromium's native
+    // image drag-and-drop, which fires pointercancel and kills the swipe one
+    // frame in. Touch devices are spared it by touch-action: none, so the bug
+    // only shows up with a mouse.
+    image.draggable = false;
+    frame.appendChild(image);
 
     card.appendChild(frame);
     return card;
 }
 
-/** Builds one control button in the row beneath the pile. */
-function buildButton(glyph, label) {
+/** Builds one of the pile's controls. */
+function buildButton(className, glyph, label) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'polaroid-stack-button';
+    button.className = className;
     button.textContent = glyph;
     button.setAttribute('aria-label', label);
     return button;
+}
+
+/**
+ * The transform for an incoming card partway through being pulled in, where
+ * progress 0 is waiting off to the left and 1 is landed on top of the pile.
+ *
+ * Interpolated in script rather than by a CSS animation because a drag needs to
+ * scrub this back and forth under the finger, which keyframes can't do.
+ */
+function entryTransform(progress) {
+    const at = (from, to) => from + (to - from) * progress;
+    return `translate(${at(ENTRY_START.x, ENTRY_END.x)}%, ${at(ENTRY_START.y, ENTRY_END.y)}%)`
+        + ` rotate(${at(ENTRY_START.rotate, ENTRY_END.rotate)}deg)`
+        + ` scale(${at(ENTRY_START.scale, ENTRY_END.scale)})`;
 }
 
 /**
@@ -93,14 +129,13 @@ export async function showPolaroidStack(map) {
     // The drawer handle rides on the pile's right edge rather than sitting in the
     // row below, because that edge is the part of the pile still on screen once
     // it has slid away — so the control that brings it back is never lost with it.
-    const handle = buildButton('‹', 'Hide photos');
-    handle.classList.add('polaroid-stack-handle');
+    const handle = buildButton('polaroid-stack-handle', '‹', 'Hide photos');
     cardsElement.appendChild(handle);
 
     const bar = document.createElement('div');
     bar.className = 'polaroid-stack-bar';
-    const previousButton = buildButton('‹', 'Previous photo');
-    const nextButton = buildButton('›', 'Next photo');
+    const previousButton = buildButton('polaroid-stack-step', '‹', 'Previous photo');
+    const nextButton = buildButton('polaroid-stack-step', '›', 'Next photo');
     bar.append(previousButton, nextButton);
 
     slider.append(cardsElement, bar);
@@ -120,8 +155,15 @@ export async function showPolaroidStack(map) {
 
     // Index into `favourites` of the photo currently on top of the pile.
     let topIndex = 0;
-    // True while a cycle animation is playing, so cycles cannot overlap.
+    // True while a cycle is playing, so cycles cannot overlap. Mirrored onto the
+    // container as a class: the individual card classes come and go partway
+    // through a cycle, so they are not a reliable "is the pile busy" signal for
+    // anything outside this module (the E2E spec waits on this).
     let animating = false;
+    const setAnimating = (value) => {
+        animating = value;
+        container.classList.toggle('is-cycling', value);
+    };
     // The in-progress drag, or null.
     let drag = null;
     // Set when a drag has moved far enough that the click it produces should
@@ -171,7 +213,7 @@ export async function showPolaroidStack(map) {
     /** Flicks the top card away and brings the next photo forward. */
     function goNext() {
         if (animating) return;
-        animating = true;
+        setAnimating(true);
 
         // Rotate the pile: the top card goes to the back.
         const leaving = byDepth.shift();
@@ -187,7 +229,7 @@ export async function showPolaroidStack(map) {
                 leaving.style.removeProperty('--pm-drag');
                 paint(leaving, featureAt(CARD_COUNT - 1));
             });
-            animating = false;
+            setAnimating(false);
         };
 
         if (reduceMotion) {
@@ -200,38 +242,83 @@ export async function showPolaroidStack(map) {
         setTimeout(settle, CYCLE_MS);
     }
 
-    /** Sweeps the previous photo back in from the left, on top of the pile. */
-    function goPrevious() {
-        if (animating) return;
-        animating = true;
+    /**
+     * Lifts the card at the back of the pile out and parks it off to the left,
+     * showing the previous photo, ready to be pulled in. Returns it.
+     *
+     * Reusing the back card is what keeps going back cheap: the pile's data
+     * model rotates by one, so only this one card needs a new photo. It is 95%
+     * hidden behind three others, so borrowing it costs nothing visually.
+     */
+    function liftIncoming() {
+        const incoming = byDepth[CARD_COUNT - 1];
+        const previous = favourites[(topIndex - 1 + favourites.length) % favourites.length];
+        paint(incoming, previous);
+        // Placed without animating, so it doesn't visibly fly out to its
+        // waiting position before the pull-in even starts.
+        withoutMotion(incoming, () => {
+            incoming.classList.add('is-incoming');
+            incoming.style.transform = entryTransform(0);
+            incoming.style.opacity = '0';
+        });
+        return incoming;
+    }
 
-        // Rotate the pile the other way: the back card returns to the top.
-        const arriving = byDepth.pop();
-        byDepth.unshift(arriving);
+    /** Moves a lifted card to `progress` (0 = waiting off-left, 1 = landed). */
+    function scrubIncoming(incoming, progress) {
+        incoming.style.transform = entryTransform(progress);
+        incoming.style.opacity = String(Math.min(progress / ENTRY_FADE_RATIO, 1));
+    }
+
+    /** Strips the temporary entry styling, leaving the card to its depth rule. */
+    function releaseIncoming(incoming) {
+        incoming.classList.remove('is-incoming');
+        incoming.style.removeProperty('transform');
+        incoming.style.removeProperty('opacity');
+    }
+
+    /**
+     * Completes a step backwards: the lifted card travels the rest of the way in
+     * and becomes the top of the pile. Clearing its inline transform is what
+     * animates it home — the depth-0 rule supplies the destination, so there is
+     * no second copy of the resting transform to keep in sync.
+     */
+    function commitPrevious(incoming) {
+        setAnimating(true);
+
+        byDepth.pop();
+        byDepth.unshift(incoming);
         topIndex = (topIndex - 1 + favourites.length) % favourites.length;
-
-        // It has to show its photo before it sweeps into view.
-        paint(arriving, featureAt(0));
         applyDepths();
 
-        // The card that was on top only steps back to depth 1, which its normal
-        // transition handles. Clearing any drag offset here lets it travel from
-        // where the finger left it rather than jumping.
-        const demoted = byDepth[1];
-        demoted.classList.remove('is-dragging');
-        demoted.style.removeProperty('--pm-drag');
+        // The card that was on top just steps back to depth 1, which its own
+        // transition handles.
+        releaseIncoming(incoming);
 
-        const settle = () => {
-            arriving.classList.remove('is-entering');
-            animating = false;
-        };
+        setTimeout(() => setAnimating(false), reduceMotion ? 0 : CYCLE_MS);
+    }
 
-        if (reduceMotion) {
-            settle();
-            return;
-        }
-        arriving.classList.add('is-entering');
-        setTimeout(settle, CYCLE_MS);
+    /**
+     * Abandons a step backwards: the lifted card slides out to the left again
+     * and then quietly rejoins the back of the pile with its original photo.
+     */
+    function cancelPrevious(incoming) {
+        setAnimating(true);
+        scrubIncoming(incoming, 0);
+
+        setTimeout(() => {
+            withoutMotion(incoming, () => {
+                releaseIncoming(incoming);
+                paint(incoming, featureAt(CARD_COUNT - 1));
+            });
+            setAnimating(false);
+        }, reduceMotion ? 0 : CYCLE_MS);
+    }
+
+    /** Pulls the previous photo in from the left, on top of the pile. */
+    function goPrevious() {
+        if (animating) return;
+        commitPrevious(liftIncoming());
     }
 
     // --- Selecting --------------------------------------------------------
@@ -274,8 +361,10 @@ export async function showPolaroidStack(map) {
         const card = event.target.closest('.polaroid-mini');
         if (card !== byDepth[0]) return;
 
-        drag = { startX: event.clientX, dx: 0, card };
-        card.classList.add('is-dragging');
+        // `mode` is decided on the first real movement, not here, because which
+        // card moves depends on which way the finger goes. `incoming` is only
+        // populated in 'back' mode.
+        drag = { startX: event.clientX, dx: 0, card, mode: null, incoming: null };
         // Capture so the card keeps receiving moves even if the pointer strays
         // off it mid-drag.
         card.setPointerCapture(event.pointerId);
@@ -284,34 +373,68 @@ export async function showPolaroidStack(map) {
     cardsElement.addEventListener('pointermove', (event) => {
         if (!drag) return;
         drag.dx = event.clientX - drag.startX;
-        // CSS folds this into the top card's transform, so we never have to
-        // rebuild (and duplicate) the card's rotation here.
-        drag.card.style.setProperty('--pm-drag', `${drag.dx}px`);
+
+        // Decide the direction once, on the first movement past the tap slop, and
+        // stick to it for the rest of the gesture.
+        if (drag.mode === null) {
+            if (Math.abs(drag.dx) < TAP_SLOP_PX) return;
+            if (drag.dx < 0) {
+                // Forward: the finger is on the card being thrown away, so that
+                // card is what moves.
+                drag.mode = 'forward';
+                drag.card.classList.add('is-dragging');
+            } else {
+                // Back: the top card stays put. What moves is the photo you
+                // flicked away last time, pulled back in from the left — so the
+                // thing travelling under your finger is the one arriving, not
+                // the one you happen to be touching.
+                drag.mode = 'back';
+                drag.incoming = liftIncoming();
+                drag.incoming.classList.add('is-dragging');
+            }
+        }
+
+        if (drag.mode === 'forward') {
+            // CSS folds this into the top card's transform, so we never have to
+            // rebuild (and duplicate) the card's rotation here.
+            drag.card.style.setProperty('--pm-drag', `${drag.dx}px`);
+            return;
+        }
+
+        // Map the drag onto the incoming card's journey, clamped so pulling past
+        // home doesn't overshoot and reversing past the start doesn't invert it.
+        const travel = drag.card.offsetWidth * ENTRY_TRAVEL_RATIO;
+        scrubIncoming(drag.incoming, Math.min(Math.max(drag.dx / travel, 0), 1));
     });
 
     function endDrag() {
         if (!drag) return;
-        const { card, dx } = drag;
+        const { card, dx, mode, incoming } = drag;
         drag = null;
-        card.classList.remove('is-dragging');
 
-        const distance = Math.abs(dx);
-        // A tap: leave it alone and let the click that follows select the photo.
-        if (distance < TAP_SLOP_PX) {
-            card.style.removeProperty('--pm-drag');
-            return;
-        }
+        // Never moved past the slop, so no mode was ever chosen: this was a tap,
+        // and the click that follows will select the photo.
+        if (mode === null) return;
 
-        // Anything past the slop was a sweep, so the click it produces is not a tap.
+        // A sweep, so the click it produces is not a tap.
         suppressClick = true;
+        const committed = Math.abs(dx) >= card.offsetWidth * DRAG_COMMIT_RATIO;
 
-        if (distance >= card.offsetWidth * DRAG_COMMIT_RATIO) {
-            // Committed. goNext reads --pm-drag to start the throw from here,
-            // and both directions clear it once they settle.
-            if (dx < 0) goNext(); else goPrevious();
+        if (mode === 'back') {
+            incoming.classList.remove('is-dragging');
+            // Either way the card keeps moving the way the finger was going:
+            // onward to the top, or back out to where it came from.
+            if (committed) commitPrevious(incoming); else cancelPrevious(incoming);
             return;
         }
 
+        card.classList.remove('is-dragging');
+        if (committed) {
+            // goNext reads --pm-drag so the throw continues from here, and clears
+            // it once the card has settled at the back of the pile.
+            goNext();
+            return;
+        }
         // Short of the threshold: the transition springs it back.
         card.style.removeProperty('--pm-drag');
     }
