@@ -201,8 +201,12 @@ test('tapping the top card flies the map and opens the blow-up', async ({ page }
         const { lat, lng } = window.__leafletMap.getCenter();
         return { lat, lng, zoom: window.__leafletMap.getZoom() };
     });
-    // The map starts zoomed out over Japan, well short of the carousel's target.
-    expect(before.zoom).toBeLessThan(13);
+    // What the carousel should actually land on: its own target, unless the map
+    // caps zoom lower than that. Read from the page so this test keeps passing
+    // when the map's maxZoom is retuned for a new basemap.
+    const target = await page.evaluate(() => Math.min(13, window.__leafletMap.getMaxZoom()));
+    // The map starts zoomed out over Japan, well short of wherever it will land.
+    expect(before.zoom).toBeLessThan(target);
 
     await page.locator('.polaroid-mini[data-depth="0"]').click();
 
@@ -212,9 +216,10 @@ test('tapping the top card flies the map and opens the blow-up', async ({ page }
     await expect(page.locator('.polaroid-animated-wrapper-overlay .polaroid img')).toBeVisible();
 
     // flyTo runs for ~1.2s and passes through intermediate zoom levels on the
-    // way, so wait for it to land on exactly the carousel's target rather than
-    // sampling mid-arc.
-    await page.waitForFunction(() => window.__leafletMap.getZoom() === 13, null, { timeout: 8000 });
+    // way, so wait for it to land on exactly the target rather than sampling
+    // mid-arc. flyTo ignores the map's maxZoom, so landing above `target` would
+    // mean the carousel is punching through the map's own ceiling.
+    await page.waitForFunction(z => window.__leafletMap.getZoom() === z, target, { timeout: 8000 });
 
     const after = await page.evaluate(() => {
         const { lat, lng } = window.__leafletMap.getCenter();

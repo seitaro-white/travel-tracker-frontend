@@ -333,10 +333,15 @@ export async function showPolaroidStack(map) {
         // GeoJSON coordinates are [lng, lat, altitude]; Leaflet wants [lat, lng].
         const [longitude, latitude] = feature.geometry.coordinates;
 
+        // flyTo does NOT respect the map's maxZoom, unlike setZoom — so without
+        // this the carousel would fly straight through whatever ceiling the map
+        // sets and land somewhere the basemap can't follow.
+        const zoom = Math.min(FLY_ZOOM, map.getMaxZoom());
+
         if (reduceMotion) {
-            map.setView([latitude, longitude], FLY_ZOOM, { animate: false });
+            map.setView([latitude, longitude], zoom, { animate: false });
         } else {
-            map.flyTo([latitude, longitude], FLY_ZOOM, { duration: FLY_SECONDS });
+            map.flyTo([latitude, longitude], zoom, { duration: FLY_SECONDS });
         }
         showAnimatedPolaroid(feature);
     }
