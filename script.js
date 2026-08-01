@@ -42,11 +42,19 @@ function initializeMap(mapId) {
         center = [39.39, 138.40]; // Original center for desktop
         zoom = 6;
     }
-    const map = L.map(mapId, {}).setView(center, zoom);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.{ext}', {
-        maxZoom: 20,
+    const map = L.map(mapId, { maxZoom: 13 }).setView(center, zoom);
+
+    // Stadia Maps API key comes from config.js (gitignored locally; injected
+    // by the GitHub Pages deploy workflow from the STADIA_API_KEY secret).
+    // See config.example.js.
+    const stadiaApiKey = window.__APP_CONFIG__?.stadiaApiKey || '';
+    const stadiaUrl = `https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.{ext}?api_key=${stadiaApiKey}`;
+    L.tileLayer(stadiaUrl, {
+        maxZoom: 16,
+        maxNativeZoom: 16,   // stop *requesting* past here; upscale beyond
         attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         ext: 'png',
+
     }).addTo(map);
     return map;
 }

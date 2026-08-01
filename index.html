@@ -23,7 +23,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-    <!-- 3. Link to your custom JavaScript file -->
+    <!-- 3. App config (gitignored locally; injected by the deploy workflow).
+         Must load BEFORE script.js so window.__APP_CONFIG__ exists. -->
+    <script src="config.js"></script>
+
+    <!-- 4. Link to your custom JavaScript file -->
     <script src="script.js" type="module" defer></script>
 
     <!-- 4. Link to your custom CSS files -->

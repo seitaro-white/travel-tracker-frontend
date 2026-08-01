@@ -2,6 +2,9 @@ data/
 .DS_Store
 node_modules/
 
+# Local-only secrets (never commit; the deploy workflow injects these)
+config.js
+
 # Playwright output
 test-results/
 playwright-report/
