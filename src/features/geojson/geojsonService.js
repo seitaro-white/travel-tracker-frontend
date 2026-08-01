@@ -130,7 +130,16 @@ export async function createGeoJsonLineLayer(filePath, style) {
     // Fetch the GeoJSON data (fetchGeoJson handles HTTP and JSON-parse errors).
     const geojson = await fetchGeoJson(filePath);
     // Create the layer using Leaflet's geoJSON factory.
+    //
+    // The style is spread into the options as well as passed as `style`,
+    // because Leaflet hands the options object straight to each feature's
+    // Polyline constructor. That matters for `renderer`: Leaflet reads it once,
+    // when the layer is added to the map, so a renderer supplied only via
+    // `style` (which is applied later) would be ignored and the layer would
+    // silently fall back to the map's default renderer. The paint properties
+    // ride along harmlessly; `style` still applies them.
     const layer = L.geoJSON(geojson, {
+        ...style,
         style: style
     });
     // Return the layer (do not add it to any map yet).

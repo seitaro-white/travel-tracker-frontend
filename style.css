@@ -91,10 +91,7 @@ h1 {
 }
 
 .key-line-transport {
-  /* This creates a dotted line effect */
-  background-image: linear-gradient(to right, #ff9900 50%, transparent 50%);
-  background-size: 8px 3px;
-  background-repeat: repeat-x;
+  background-color: #ff9900; /* A solid orange line, matching LineStyles.publicTransport */
 }
 
 .key-line-personal {

@@ -18,6 +18,11 @@
     <!-- Make sure this path is correct based on where you save the file -->
     <script src="dist/leaflet.motion.min.js"></script>
 
+    <!-- rough.js: gives the static route lines their hand-drawn look.
+         Vendored (like leaflet.motion) rather than pulled from a CDN.
+         Must load before script.js -- see src/features/geojson/roughRenderer.js -->
+    <script src="dist/rough.js"></script>
+
     <!-- Include Leaflet.markercluster CSS and JS (from CDN) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />

@@ -39,6 +39,7 @@ tests/
     full-integration.spec.js  # place markers visible after animation + zoom
     overlay-interactions.spec.js # openOverlay dismissal paths (Escape, backdrop)
     carousel.spec.js          # polaroid pile: mount, cycle, fly-to, collapse
+    roughLines.spec.js        # hand-drawn renderer: bezier output + stable seed
 ```
 
 **E2E specs share `mapTestHarness.js`** for the animation stubs and the `window.__leafletMap` capture — add new specs against that rather than copying the scaffolding.
@@ -85,6 +86,8 @@ Note: The human developer doesn't experience this caching issue in their browser
 - Leaflet.MarkerCluster for clustering
 - leaflet.motion for line animations
 
+**Vendored in `dist/`:** leaflet.motion, and rough.js (the hand-drawn line renderer — see below).
+
 **Data:** GeoJSON files in `assets/points/` (photos, places, info) and `assets/lines/` (routes, animations, flights)
 
 **Favourite photo carousel:** a pile of four askew mini polaroids in the map's bottom-left corner (centred on mobile), mounted as the closing beat of the intro via `showOverlayPanel`'s `onClose`.
@@ -100,6 +103,16 @@ Note: The human developer doesn't experience this caching issue in their browser
 - **The drawer handle sits on the pile's right edge**, not in the button row, because that edge is the part still on screen once the pile has slid away. Putting it in the row would let the only way back travel off-screen with the pile.
 - **Aspect ratios force the square crop:** the favourites run 0.70 → 1.68. Anything that preserved each photo's shape would make the pile's peeking edges jump on every cycle.
 - The container needs Leaflet's `disableClickPropagation`/`disableScrollPropagation` *and* an explicit `pointerdown` stop, or dragging a card pans the map underneath.
+
+**Hand-drawn lines:** every *static* line layer is drawn as if by hand, via rough.js. `src/features/geojson/roughRenderer.js` subclasses `L.SVG` and overrides one method — `_updatePoly`, the single place Leaflet turns projected pixel points into an SVG `d`. Everything else about a line layer is untouched: stroke styling, click handling, and the `_path` element the intro's fade helpers reach for.
+
+- **It is a renderer, not a layer.** Opt in per style object (`renderer: roughRenderer` in `geojsonStyles.js`), so the animated intro lines simply don't get it.
+- **All static lines share one renderer instance.** Each instance owns its own `<svg>` in the overlay pane, so splitting them would make them stack by renderer rather than by `STATIC_LINE_LAYERS` order.
+- **`renderer` has to reach the Polyline *constructor*.** Leaflet reads that option once, when the layer is added to the map — supplying it only via `style` (applied later) is too late and the layer silently falls back to the default renderer, straight lines and all. This is why `createGeoJsonLineLayer` spreads the style into the `L.geoJSON` options as well as passing it as `style`.
+- **The seed is load-bearing.** rough re-rolls its randomness on every call and Leaflet redraws on every zoom, so without a fixed seed the wobble changes each time and the lines shimmer. `L.Util.stamp(layer)` is the stable per-layer id used for it.
+- **The animated lines can't have this**, and shouldn't: leaflet.motion redraws them as they grow, so the wobble would be re-rolled every frame and the line would boil. The intro crossfade reads better as tidy lines dissolving into hand-drawn ones anyway.
+- **`smoothFactor` is turned up** (2–4, vs. the default 1) on the static layers. It cuts how much geometry rough redraws per zoom, and a sketchy line wants fewer points regardless — rough overshoots each segment by a couple of pixels, so tracing every GPS wiggle becomes a scribble. The flight arcs keep the default, being synthesised smooth curves rather than GPS traces.
+- **`roughness`/`bowing` were tuned by eye** against dense Tokyo walking routes at zoom 13. Past roughly `roughness: 3` the lines wander far enough off the real streets that a route stops reading as a route. Cost is ~10–15 ms added to a zoom redraw.
 
 **Flight arcs:** `assets/lines/flights.geojson` holds past flights as `LineString`s with exactly two coordinates (origin + destination airport, `[lng, lat]`). `flightArcs.js` reads these and synthesises a bowed arc per flight (quadratic Bézier offset perpendicular to the route midpoint — `ARC_CURVATURE`/`ARC_SEGMENTS` tune it); a straight 2-point line would otherwise render flat. The arcs join the intro crossfade in `script.js` and are zoom-gated to only show when zoomed out (≤ `FLIGHT_MAX_ZOOM`) via `manageLayerVisibilityByZoom`.
 
