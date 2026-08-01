@@ -42,7 +42,7 @@ function initializeMap(mapId) {
         center = [39.39, 138.40]; // Original center for desktop
         zoom = 6;
     }
-    const map = L.map(mapId, { maxZoom: 13 }).setView(center, zoom);
+    const map = L.map(mapId, { maxZoom: 19 }).setView(center, zoom);
 
     // Thunderforest API key comes from config.js (gitignored locally; injected
     // by the GitHub Pages deploy workflow from the THUNDERFOREST_API_KEY secret).
