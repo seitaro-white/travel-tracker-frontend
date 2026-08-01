@@ -44,16 +44,15 @@ function initializeMap(mapId) {
     }
     const map = L.map(mapId, { maxZoom: 13 }).setView(center, zoom);
 
-    // Stadia Maps API key comes from config.js (gitignored locally; injected
-    // by the GitHub Pages deploy workflow from the STADIA_API_KEY secret).
+    // Thunderforest API key comes from config.js (gitignored locally; injected
+    // by the GitHub Pages deploy workflow from the THUNDERFOREST_API_KEY secret).
     // See config.example.js.
-    const stadiaApiKey = window.__APP_CONFIG__?.stadiaApiKey || '';
-    const stadiaUrl = `https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.{ext}?api_key=${stadiaApiKey}`;
-    L.tileLayer(stadiaUrl, {
-        maxZoom: 16,
-        maxNativeZoom: 16,   // stop *requesting* past here; upscale beyond
-        attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        ext: 'png',
+    const tfApiKey = window.__APP_CONFIG__?.thunderforestApiKey || '';
+    const tfUrl = `https://api.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${tfApiKey}`;
+    L.tileLayer(tfUrl, {
+        maxZoom: 19,
+        maxNativeZoom: 19,   // stop *requesting* past here; upscale beyond
+        attribution: '© <a href="https://www.thunderforest.com/">Thunderforest</a>, © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 
     }).addTo(map);
     return map;
