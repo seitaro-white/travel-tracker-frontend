@@ -21,7 +21,7 @@ const STATIC_LINE_LAYERS = [
 
 // Flight arcs are only meant to be glanceable from a zoomed-out view, so
 // they're hidden once you zoom in past this level (see manageLayerVisibilityByZoom).
-const FLIGHT_MAX_ZOOM = 9;
+const FLIGHT_MAX_ZOOM = 10;
 
 // Point layers that should only be visible once zoomed in (zoom >= minZoom).
 const ZOOMED_POINT_LAYERS = [
