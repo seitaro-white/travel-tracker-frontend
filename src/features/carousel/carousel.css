@@ -36,6 +36,13 @@
        and the intro panel (3000), so opening a photo dims the pile behind it. */
     z-index: 1002;
     box-sizing: border-box;
+    /* The positioner must not be a target itself. Only the slider inside it is
+       transformed, and a transform moves what you see without moving this box —
+       so a collapsed pile would otherwise leave a card-sized invisible hole
+       here, swallowing pans and pinches. On mobile that hole is vertically
+       centred, i.e. right where a thumb lands. Hits are re-enabled on the
+       slider below, which is the part that actually travels. */
+    pointer-events: none;
 }
 
 .polaroid-stack *,
@@ -65,10 +72,20 @@
 .polaroid-stack-slider {
     transform: translateX(var(--pm-slide));
     transition: transform 620ms var(--pm-ease), opacity 400ms ease-out;
+    /* Takes back the hits the positioner gave up. Because this is the element
+       that moves, its target area goes off-screen with the pile. */
+    pointer-events: auto;
 }
 
 .polaroid-stack.is-hidden .polaroid-stack-slider {
     opacity: 0;
+}
+
+/* The sheet exists only on a phone (see the mobile block at the bottom). On a
+   wider screen the pile is a drawer with a handle, and there is no sheet at all
+   — so its surface and grabber are simply not rendered. */
+.polaroid-stack-surface {
+    display: none;
 }
 
 /* --- The pile ------------------------------------------------------------- */
@@ -342,29 +359,179 @@
 
 /* --- Mobile --------------------------------------------------------------- */
 
+/* On a phone the drawer idiom is replaced wholesale by a bottom sheet. The
+   layout below overrides only positioning and chrome — the card, the depth
+   rules and the cycling motion above are shared with the desktop pile.
+ *
+ * The two states are:
+ *   resting (is-collapsed) — a ~96px pile in the bottom-left corner. Small
+ *     enough that it never has to move out of anyone's way, which is what
+ *     retires the handle, the collapse direction, and any need to reposition.
+ *   open — a sheet the pile has grown into, with cards larger than the old
+ *     centred pile managed. Nothing has left the screen, so getting back to the
+ *     photos is always a tap on something you can see.
+ *
+ * is-collapsed is deliberately the same flag the desktop drawer uses, so both
+ * idioms are one state machine in polaroidStack.js with two skins here.
+ * ------------------------------------------------------------------------- */
 @media (max-width: 700px) {
     .polaroid-stack {
-        --pm-card: 200px;
-        --pm-step: 6px;
-        --pm-lift: 16px;
-        /* Expanded, the pile sits centred rather than in a corner: on a narrow
-           screen a corner-anchored pile is neither out of the way nor properly
-           presented. The positioner stays anchored left so that the collapsed
-           state is still a plain slide to the left edge. */
-        --pm-slide: calc(50vw - 50% - 20px);
-        bottom: auto;
-        top: 50%;
-        transform: translateY(-50%);
+        --pm-card: min(72vw, 300px);
+        --pm-step: 5px;
+        --pm-lift: 12px;
+        /* Shrink factor for the resting pile: about 96px of a 281px card on a
+           390px-wide phone. Big enough to read as a photograph, small enough to
+           ignore. Applied as a transform rather than a smaller --pm-card so the
+           change between states can actually animate. */
+        --pm-rest-scale: 0.34;
+        /* Fixed rather than derived from content, so the surface can be
+           position: absolute and the whole sheet moves as one piece. The
+           constant covers the grabber, the gap under the pile, the button row
+           and the home indicator. */
+        --pm-sheet-h: calc(var(--pm-card) + 150px + env(safe-area-inset-bottom, 0px));
+
+        /* The positioner becomes the sheet's footprint. Everything inside is
+           absolutely placed against it, in both states. */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        height: var(--pm-sheet-h);
+        transform: none;
     }
 
-    /* Collapsed and hidden are absolute positions, so they must not inherit the
-       centring offset above. */
-    .polaroid-stack.is-collapsed {
-        --pm-slide: calc(-100% + 6px);
+    /* The sideways drawer slide has no meaning here; the slider is demoted to a
+       plain positioning context. Hits belong to the surface and the pile, so
+       the empty sheet-sized area around the resting pile stays transparent to
+       pans and pinches. */
+    .polaroid-stack-slider {
+        position: absolute;
+        inset: 0;
+        transform: none;
+        transition: opacity 400ms ease-out;
+        pointer-events: none;
     }
 
-    .polaroid-stack.is-hidden {
-        --pm-slide: calc(-100% - 80px);
+    /* --- The sheet surface --- */
+
+    .polaroid-stack-surface {
+        display: block;
+        position: absolute;
+        inset: 0;
+        /* A warm paper tone rather than white: the polaroids are pure white, and
+           they need something to sit *on*. Matches the #ece9e4 the card windows
+           already show while a photo decodes. */
+        background-color: #f4f1ec;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.16);
+        transform: translateY(var(--pm-sheet-drag, 0px));
+        transition: transform 420ms var(--pm-ease);
+        pointer-events: auto;
+        /* The sheet drag is ours; without this the browser claims the vertical
+           swipe, exactly as it would on the cards. */
+        touch-action: none;
+    }
+
+    /* Resting: the paper is gone, so taps in the sheet's footprint reach the map
+       rather than a surface that is only notionally there. Note this rule never
+       mentions --pm-sheet-drag: a dismissal therefore animates from wherever the
+       finger left the sheet straight down to 100%, continuing the gesture. */
+    .polaroid-stack.is-collapsed .polaroid-stack-surface {
+        transform: translateY(100%);
+        pointer-events: none;
+    }
+
+    /* The bar the sheet is dragged by. Its own hit area is generous, but the
+       whole surface drags, so this is really a signpost. */
+    .polaroid-stack-grabber {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 26px;
+        cursor: pointer;
+    }
+
+    .polaroid-stack-grabber::before {
+        content: '';
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background-color: rgba(0, 0, 0, 0.18);
+    }
+
+    /* --- The pile in both states --- */
+
+    /* Anchored bottom-left and moved by transform alone, so the resting and open
+       positions interpolate cleanly (a left: 16px → left: 50% transition would
+       be interpolating a length against a percentage). The centring offset is
+       the same calc the pile used when it was centred outright. */
+    .polaroid-stack-cards {
+        position: absolute;
+        left: 16px;
+        bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+        transform-origin: bottom left;
+        transform: translate(calc(50vw - 50% - 16px), var(--pm-sheet-drag, 0px)) scale(1);
+        transition: transform 420ms var(--pm-ease), bottom 420ms var(--pm-ease),
+                    opacity 400ms ease-out;
+        pointer-events: auto;
+    }
+
+    /* Resting: shrink about the bottom-left corner and drop into it. */
+    .polaroid-stack.is-collapsed .polaroid-stack-cards {
+        bottom: 16px;
+        transform: translate(0px, var(--pm-sheet-drag, 0px)) scale(var(--pm-rest-scale));
+        cursor: pointer;
+    }
+
+    /* --- Controls --- */
+
+    /* The handle is the drawer's way back in, and there is no drawer here. The
+       resting pile is its own affordance. */
+    .polaroid-stack-handle {
+        display: none;
+    }
+
+    .polaroid-stack-bar {
+        position: absolute;
+        left: 50%;
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        margin-top: 0;
+        transform: translate(-50%, var(--pm-sheet-drag, 0px));
+        transition: transform 420ms var(--pm-ease), opacity 260ms ease-out,
+                    visibility 0s linear 0s;
+        pointer-events: auto;
+    }
+
+    /* Resting, the buttons go with the sheet. Fading them is enough — they are
+       inside a surface that is leaving anyway — but visibility still takes them
+       out of the tab order once they've gone. */
+    .polaroid-stack.is-collapsed .polaroid-stack-bar {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 260ms ease-out, visibility 0s linear 260ms;
+    }
+
+    /* --- Dragging and mounting --- */
+
+    /* While a finger is on the sheet, everything it carries must track it
+       exactly rather than easing after it. */
+    .polaroid-stack.is-sheet-dragging .polaroid-stack-surface,
+    .polaroid-stack.is-sheet-dragging .polaroid-stack-cards,
+    .polaroid-stack.is-sheet-dragging .polaroid-stack-bar {
+        transition: none;
+    }
+
+    /* The mount reveal: the resting pile rises into its corner. Declared after
+       the collapsed rules so it wins while both classes are briefly present. */
+    .polaroid-stack.is-hidden .polaroid-stack-cards {
+        transform: translate(0px, 40px) scale(var(--pm-rest-scale));
+        opacity: 0;
     }
 }
 
@@ -374,6 +541,9 @@
    fly-to is handled in script, where flyTo is swapped for a direct setView. */
 @media (prefers-reduced-motion: reduce) {
     .polaroid-stack-slider,
+    .polaroid-stack-surface,
+    .polaroid-stack-cards,
+    .polaroid-stack-bar,
     .polaroid-mini,
     .polaroid-stack-step,
     .polaroid-stack-handle {

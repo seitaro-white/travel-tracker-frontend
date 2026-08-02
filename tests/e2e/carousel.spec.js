@@ -1,6 +1,11 @@
 /**
  * E2E test for the favourite-photo carousel — the pile of mini polaroids.
  *
+ * This file runs at the default (desktop) viewport, so it covers the drawer:
+ * the corner pile, its handle, and the slide off the left edge. The phone is a
+ * different idiom entirely — a resting pile and a bottom sheet — and lives in
+ * carousel-sheet.spec.js.
+ *
  * The pile mounts as the closing beat of the intro, so every test here has to
  * get through the intro first; mapTestHarness stubs it down to milliseconds.
  *
@@ -9,26 +14,17 @@
  * (the top card changed, the map moved) rather than identity — which is why the
  * app needs no test-only seeding hook.
  *
- * Run this file only: npx playwright test carousel
+ * Run this file only: npx playwright test carousel.spec
  */
 
 import { test, expect } from '@playwright/test';
-import { captureLeafletMap, stubIntroAnimations, stubFavouritePhotos, SETUP_TIMEOUT } from './mapTestHarness.js';
-
-/** Runs the intro, dismisses the overlay, and waits for the pile to slide in. */
-async function openAppAndDismissIntro(page) {
-    await captureLeafletMap(page);
-    await stubIntroAnimations(page);
-    await stubFavouritePhotos(page);
-    await page.goto('http://localhost:8000');
-
-    // The intro overlay appearing is the signal that setupMap() is done.
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
-    await page.locator('.overlay-panel-close').click();
-
-    // Dismissing the intro is what mounts the pile (via showOverlayPanel's onClose).
-    await expect(page.locator('.polaroid-stack')).toBeVisible({ timeout: 5000 });
-}
+import {
+    captureLeafletMap,
+    openAppAndDismissIntro,
+    stubIntroAnimations,
+    stubFavouritePhotos,
+    SETUP_TIMEOUT,
+} from './mapTestHarness.js';
 
 /** The <img> inside whichever card is currently on top of the pile. */
 function topCardImage(page) {
@@ -68,7 +64,7 @@ test('the pile slides in once the intro is dismissed', async ({ page }) => {
     // It arrives expanded, not collapsed.
     await expect(page.locator('.polaroid-stack.is-collapsed')).toHaveCount(0);
     // The top card is showing a real photo from the display directory.
-    await expect(topCardImage(page)).toHaveAttribute('src', /assets\/photos\/display\/.+\.jpg$/);
+    await expect(topCardImage(page)).toHaveAttribute('src', /assets\/photos\/display\/.+\.webp$/);
 
     expect(jsErrors, `Unexpected JS errors: ${jsErrors.join('; ')}`).toHaveLength(0);
 });

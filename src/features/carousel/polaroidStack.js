@@ -7,6 +7,15 @@
 // Only four card elements ever exist. `byDepth` holds them in pile order (index
 // 0 is the top card), and cycling rotates that array and repaints whichever card
 // ends up at the back — so a 47-photo pile costs the same DOM as a 4-photo one.
+//
+// The pile is put away differently on the two screen sizes, but it is the same
+// state machine: `is-collapsed` means "put away", and only the CSS for it
+// differs. On a desktop that is the drawer — the pile slides off the left edge
+// leaving its handle behind. On a phone it is a small resting pile in the
+// bottom-left corner, and "open" is a bottom sheet the pile grows into, where
+// the photos get more room than the old centred pile ever gave them. Nothing
+// leaves the screen there, which is why the phone needs no handle to find it
+// with, and why the pile never needs repositioning.
 
 import { loadFavouritePhotos } from './favouritePhotos.js';
 import { showAnimatedPolaroid } from '../overlays/polaroidOverlay.js';
@@ -37,6 +46,16 @@ const ENTRY_FADE_RATIO = 0.3;
 // Town/district level: close enough to place the photo, wide enough for context.
 const FLY_ZOOM = 13;
 const FLY_SECONDS = 1.2;
+// Must match the mobile breakpoint in carousel.css, which is where the pile
+// stops being a corner drawer and becomes a bottom sheet.
+const MOBILE_BREAKPOINT_PX = 700;
+// How far down the sheet must be dragged to dismiss it, as a fraction of its
+// own height. Same idea as DRAG_COMMIT_RATIO, on the other axis.
+const SHEET_DISMISS_RATIO = 0.25;
+// Every full-screen overlay openOverlay can put up (the polaroid blow-up, and
+// the info/intro panels). Kept as one selector because the pile treats them
+// alike: while any of them is on screen, a tap elsewhere belongs to it.
+const OVERLAY_WRAPPERS = '.polaroid-animated-wrapper-overlay, .overlay-panel-overlay';
 
 /** Builds one mini polaroid. A <button> so it is focusable and clickable for free. */
 function buildCard() {
@@ -116,6 +135,21 @@ export async function showPolaroidStack(map) {
     const slider = document.createElement('div');
     slider.className = 'polaroid-stack-slider';
 
+    // The sheet's own surface — the paper the pile sits on once it's open, and
+    // the thing that slides down out of sight when it isn't. Phone-only:
+    // display: none on wider screens, where the drawer is the idiom instead.
+    // Built first so the cards, as a later sibling, paint on top of it.
+    const surface = document.createElement('div');
+    surface.className = 'polaroid-stack-surface';
+    // The universal "drag me" affordance, and a tap target for closing. Not a
+    // <button> because the sheet drag lives on the surface and this sits inside
+    // it — a nested button would only complicate what a tap means.
+    const grabber = document.createElement('div');
+    grabber.className = 'polaroid-stack-grabber';
+    grabber.setAttribute('role', 'button');
+    grabber.setAttribute('aria-label', 'Hide photos');
+    surface.appendChild(grabber);
+
     const cardsElement = document.createElement('div');
     cardsElement.className = 'polaroid-stack-cards';
 
@@ -138,7 +172,7 @@ export async function showPolaroidStack(map) {
     const nextButton = buildButton('polaroid-stack-step', '›', 'Next photo');
     bar.append(previousButton, nextButton);
 
-    slider.append(cardsElement, bar);
+    slider.append(surface, cardsElement, bar);
     container.appendChild(slider);
     document.body.appendChild(container);
 
@@ -348,6 +382,11 @@ export async function showPolaroidStack(map) {
 
     // --- Collapsing -------------------------------------------------------
 
+    // Read live rather than captured at mount, so a rotation or a resized
+    // window switches idioms with the CSS rather than drifting out of step
+    // with it.
+    const isPhone = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
+
     function setCollapsed(collapsed) {
         container.classList.toggle('is-collapsed', collapsed);
         // The chevron points the way the pile will travel if you press it.
@@ -355,6 +394,89 @@ export async function showPolaroidStack(map) {
         handle.setAttribute('aria-label', collapsed ? 'Show photos' : 'Hide photos');
         handle.setAttribute('aria-expanded', String(!collapsed));
     }
+
+    // Touching the map — or anything else that isn't the pile — puts the pile
+    // away. On a phone the expanded pile sits in the middle of the screen, so
+    // reaching for the map is itself the signal that you're done with it, and
+    // hunting for the handle first is a step too many.
+    //
+    // Phone only: on a desktop the pile is a small object in a corner
+    // obstructing nothing, so collapsing it every time you clicked a marker
+    // would be taking it away from someone who never asked.
+    //
+    // Capture phase, because the map and the overlays stop pointerdown
+    // propagating; this has to see the event before they swallow it. That makes
+    // the contains() check load-bearing rather than belt-and-braces: it is now
+    // the only thing keeping a tap on the pile from collapsing it.
+    document.addEventListener('pointerdown', (event) => {
+        if (!isPhone.matches) return;
+        if (container.classList.contains('is-collapsed')) return;
+        if (container.contains(event.target)) return;
+        // An overlay is up, so this tap is aimed at the overlay — dismissing the
+        // blow-up you just opened from the pile, most likely. Only a tap that
+        // reaches the map itself means "I'm done with the photos". Checking for
+        // the overlay rather than tracking our own blow-up covers info cards
+        // opened from markers too, which want the same treatment.
+        if (document.querySelector(OVERLAY_WRAPPERS)) return;
+        setCollapsed(true);
+    }, true);
+
+    // --- The sheet drag ---------------------------------------------------
+
+    // Dragging the sheet down puts it away. The listeners are on the surface
+    // rather than the grabber alone, so the whole paper is draggable and the
+    // grabber is just the part that says so. The cards and the button row are
+    // siblings of the surface, not children, so a swipe that starts on a photo
+    // never reaches here — the two gestures can't collide.
+    let sheetDrag = null;
+
+    surface.addEventListener('pointerdown', (event) => {
+        if (container.classList.contains('is-collapsed')) return;
+        // Whether this started on the grabber has to be settled now: the
+        // capture below retargets every later event in the gesture to the
+        // surface, so pointerup can no longer tell where the finger went down.
+        sheetDrag = {
+            startY: event.clientY,
+            dy: 0,
+            fromGrabber: !!event.target.closest('.polaroid-stack-grabber'),
+        };
+        container.classList.add('is-sheet-dragging');
+        surface.setPointerCapture(event.pointerId);
+    });
+
+    surface.addEventListener('pointermove', (event) => {
+        if (!sheetDrag) return;
+        // Downward only. There is nothing above the sheet to reveal, and letting
+        // it be pulled up would just tear it off the bottom of the screen.
+        sheetDrag.dy = Math.max(event.clientY - sheetDrag.startY, 0);
+        container.style.setProperty('--pm-sheet-drag', `${sheetDrag.dy}px`);
+    });
+
+    function endSheetDrag() {
+        if (!sheetDrag) return;
+        const { dy, fromGrabber } = sheetDrag;
+        sheetDrag = null;
+        container.classList.remove('is-sheet-dragging');
+        // Clearing this returns the open state's target to 0, so a sheet let go
+        // short of the threshold eases back up. If we collapse instead, the
+        // collapsed rule doesn't mention the variable at all — the transform
+        // animates from wherever the finger left it straight down to 100%, so
+        // the dismissal continues the gesture rather than restarting it.
+        container.style.removeProperty('--pm-sheet-drag');
+
+        if (dy >= surface.offsetHeight * SHEET_DISMISS_RATIO) {
+            setCollapsed(true);
+            return;
+        }
+        // Not a drag at all, and it started on the grabber: treat it as the tap
+        // that the grabber's shape is inviting.
+        if (dy < TAP_SLOP_PX && fromGrabber) {
+            setCollapsed(true);
+        }
+    }
+
+    surface.addEventListener('pointerup', endSheetDrag);
+    surface.addEventListener('pointercancel', endSheetDrag);
 
     // --- Input ------------------------------------------------------------
 
@@ -477,7 +599,11 @@ export async function showPolaroidStack(map) {
 
     byDepth.forEach((card, depth) => paint(card, featureAt(depth)));
     applyDepths();
-    setCollapsed(false);
+    // A phone arrives at rest: the small corner pile is the invitation, and
+    // throwing a half-screen sheet over the map the moment the intro closes
+    // would be answering a question nobody asked yet. A desktop arrives open,
+    // as it always has — the corner pile obstructs nothing there.
+    setCollapsed(isPhone.matches);
 
     // Double rAF so the browser has laid the pile out at its off-screen start
     // position before we ask it to slide in; otherwise the transition has

@@ -24,6 +24,7 @@
  * paths still run; we only shortcut the animation distance.
  */
 
+import { expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -130,6 +131,32 @@ export async function stubFavouritePhotos(page, count = 8) {
             body: JSON.stringify({ type: 'FeatureCollection', features: favourites }),
         })
     );
+}
+
+/**
+ * Everything a carousel test needs to reach its starting line: stubs applied,
+ * page loaded, intro dismissed, pile mounted. Shared by the carousel specs so
+ * they can't drift apart on how they get there.
+ *
+ * The final wait — for the intro wrapper to leave the DOM, not merely to start
+ * fading — is load-bearing on a phone. The sheet ignores taps outside itself
+ * while any overlay is on screen (so that dismissing a blow-up doesn't also
+ * close the sheet behind it), which means a test that starts tapping during the
+ * intro's 600 ms fade-out would have those taps quietly swallowed.
+ */
+export async function openAppAndDismissIntro(page) {
+    await captureLeafletMap(page);
+    await stubIntroAnimations(page);
+    await stubFavouritePhotos(page);
+    await page.goto('http://localhost:8000');
+
+    // The intro overlay appearing is the signal that setupMap() is done.
+    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
+    await page.locator('.overlay-panel-close').click();
+
+    // Dismissing the intro is what mounts the pile (via showOverlayPanel's onClose).
+    await expect(page.locator('.polaroid-stack')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.overlay-panel-overlay')).toHaveCount(0);
 }
 
 /**

@@ -34,15 +34,18 @@ tests/
   placeEmojis.test.js         # dead-key check: every emoji key is used in data
   favouritePhotos.test.js     # carousel selection + every favourite has a display image
   e2e/
-    mapTestHarness.js         # shared: animation stubs + L.map() capture (not a spec)
+    mapTestHarness.js         # shared: animation stubs, L.map() capture, intro dismissal (not a spec)
     smoke.spec.js             # Leaflet container + tile + marker load, no JS errors
     full-integration.spec.js  # place markers visible after animation + zoom
     overlay-interactions.spec.js # openOverlay dismissal paths (Escape, backdrop)
-    carousel.spec.js          # polaroid pile: mount, cycle, fly-to, collapse
+    carousel.spec.js          # desktop drawer: mount, cycle, fly-to, collapse
+    carousel-sheet.spec.js    # phone: resting pile + bottom sheet (viewport set via test.use)
     roughLines.spec.js        # hand-drawn renderer: bezier output + stable seed
 ```
 
-**E2E specs share `mapTestHarness.js`** for the animation stubs and the `window.__leafletMap` capture — add new specs against that rather than copying the scaffolding.
+**E2E specs share `mapTestHarness.js`** for the animation stubs, the `window.__leafletMap` capture, and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
+
+**Viewport is what selects the carousel idiom.** `carousel.spec.js` runs at the default viewport and therefore tests the desktop drawer; `carousel-sheet.spec.js` sets a phone viewport with `test.use()` so the page is laid out below the 700px breakpoint from the first paint. Use `test.use()` rather than `setViewportSize()` — resizing after load exercises a transition between idioms that no real user sees.
 
 **No seeding hook for the carousel's shuffle.** `carousel.spec.js` asserts behaviour (the top card changed, the map moved) rather than which photo is showing, so the random order needs no test-only surface in production code.
 
@@ -92,7 +95,14 @@ Note: The human developer doesn't experience this caching issue in their browser
 
 **Data:** GeoJSON files in `assets/points/` (photos, places, info) and `assets/lines/` (routes, animations, flights)
 
-**Favourite photo carousel:** a pile of four askew mini polaroids in the map's bottom-left corner (centred on mobile), mounted as the closing beat of the intro via `showOverlayPanel`'s `onClose`.
+**Favourite photo carousel:** a pile of four askew mini polaroids, mounted as the closing beat of the intro via `showOverlayPanel`'s `onClose`. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
+
+| | desktop (> 700px) | phone (≤ 700px) |
+|---|---|---|
+| open | 260px pile, bottom-left corner | bottom sheet, ~280px cards |
+| put away (`is-collapsed`) | slid off the left edge, handle left behind | ~96px resting pile in the corner |
+| arrives | open | put away (resting) |
+| way back in | the drawer handle | tap the resting pile |
 
 - **Which photos:** the `priority` property in `photos.geojson`. A photo is a favourite when `priority` is truthy and not `"0"` (47 at time of writing). `favouritePhotos.js` is the only consumer of that field. Order is reshuffled on every page load.
 - **Only four cards exist in the DOM.** `byDepth` holds them in pile order (index 0 = top). Cycling rotates that array and repaints whichever card lands at the back, so a 47-photo pile costs the same DOM as a 4-photo one. `data-depth` is what positions each card in CSS.
@@ -102,9 +112,20 @@ Note: The human developer doesn't experience this caching issue in their browser
 - **`draggable="false"` on the card images is load-bearing.** Without it Chromium starts a native image drag on mousedown, fires `pointercancel`, and the swipe dies one frame in. Touch is unaffected (`touch-action: none`), so the bug is mouse-only and easy to miss.
 - **`is-cycling` on the container** is the "pile is busy" signal, mirroring the internal `animating` flag. The per-card classes are removed partway through a cycle, so they can't be used for this — the E2E spec waits on `is-cycling`.
 - **Sweeping does not move the map**; tapping the top card does. `flyTo` at zoom 13 runs *simultaneously* with the blow-up rising — the overlay's backdrop is a 40% scrim, not an opaque cover, so the flight stays visible through it. The blow-up is the unchanged `showAnimatedPolaroid`, identical to a marker click.
-- **The drawer handle sits on the pile's right edge**, not in the button row, because that edge is the part still on screen once the pile has slid away. Putting it in the row would let the only way back travel off-screen with the pile.
+- **The drawer handle sits on the pile's right edge** (desktop only — `display: none` on a phone), not in the button row, because that edge is the part still on screen once the pile has slid away. Putting it in the row would let the only way back travel off-screen with the pile.
 - **Aspect ratios force the square crop:** the favourites run 0.70 → 1.68. Anything that preserved each photo's shape would make the pile's peeking edges jump on every cycle.
 - The container needs Leaflet's `disableClickPropagation`/`disableScrollPropagation` *and* an explicit `pointerdown` stop, or dragging a card pans the map underneath.
+- **`.polaroid-stack` is `pointer-events: none`; the slider inside it takes hits back.** Only the slider is transformed, and a transform moves what you see without moving the *positioner's* hit box — so putting hits on the container leaves a card-sized invisible hole wherever the pile was laid out, swallowing pans and pinches even when the pile has slid away. Anything that moves the transform back onto the container reintroduces that.
+
+**The phone sheet** (the `@media (max-width: 700px)` block in `carousel.css`):
+
+- **Nothing ever leaves the screen**, which is what retires the handle, the collapse direction, and any need to drag the pile around. Resting is small rather than gone, so the way back is always something you can see.
+- **The size change is a `transform: scale()` on `.polaroid-stack-cards`, not a smaller `--pm-card`** — custom property changes don't animate, so the pile could not grow into the sheet that way.
+- **The sheet's footprint is a fixed height** (`--pm-sheet-h`, derived from `--pm-card`), so the surface can be `position: absolute` and the whole sheet moves as one piece rather than reflowing.
+- **The collapsed rule must not mention `--pm-sheet-drag`.** A dismissal then animates from wherever the finger left the sheet straight down to `translateY(100%)`, continuing the gesture instead of snapping back to 0 first and re-running it.
+- **The sheet drag lives on `.polaroid-stack-surface`, and the cards are its *sibling*, not its child.** That is what keeps the vertical dismiss and the horizontal browse from colliding — a swipe starting on a photo never reaches the surface's handlers, so no axis detection is needed.
+- **`setPointerCapture` retargets the rest of the gesture to the capturing element**, so "did this start on the grabber?" has to be recorded at `pointerdown`; by `pointerup` the target is the surface and the answer is lost.
+- **Tapping the map closes the sheet, but only when no overlay is up** (`OVERLAY_WRAPPERS`) — otherwise dismissing the blow-up you just opened from the pile would close the sheet behind it. Phone-only: on a desktop the corner pile obstructs nothing, so collapsing it on every marker click would be taking it away unasked.
 
 **Hand-drawn lines:** every *static* line layer is drawn as if by hand, via rough.js. `src/features/geojson/roughRenderer.js` subclasses `L.SVG` and overrides one method — `_updatePoly`, the single place Leaflet turns projected pixel points into an SVG `d`. Everything else about a line layer is untouched: stroke styling, click handling, and the `_path` element the intro's fade helpers reach for.
 
