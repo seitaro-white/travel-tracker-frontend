@@ -51,7 +51,7 @@ export function onEachPhotoFeature(feature, layer) {
  */
 export function pointToLayerForPhotos(feature, latlng) {
     if (feature.properties && feature.properties.filename) {
-        const imagePath = `assets/photos/thumbnail/${feature.properties.filename}.jpg`;
+        const imagePath = `assets/photos/thumbnail/${feature.properties.filename}.webp`;
         const iconHtml = `<img src="${imagePath}" alt="Photo location" class="photo-marker-image">`;
         const customIcon = L.divIcon({
             html: iconHtml,

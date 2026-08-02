@@ -179,7 +179,7 @@ export async function showPolaroidStack(map) {
     function paint(card, feature) {
         card._feature = feature;
         const image = card.querySelector('img');
-        image.src = `assets/photos/display/${feature.properties.filename}.jpg`;
+        image.src = `assets/photos/display/${feature.properties.filename}.webp`;
         image.alt = feature.properties.description || 'A favourite photo from the trip';
     }
 

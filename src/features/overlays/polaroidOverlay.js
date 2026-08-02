@@ -49,7 +49,7 @@ export function showAnimatedPolaroid(feature) {
     ensureStampFilter();
 
     // Construct the image path and caption from the feature properties.
-    const imagePath = `assets/photos/display/${feature.properties.filename}.jpg`;
+    const imagePath = `assets/photos/display/${feature.properties.filename}.webp`;
     const captionText = feature.properties.description || "";
 
     // Create the polaroid element that holds the image and caption.
