@@ -44,17 +44,30 @@ function initializeMap(mapId) {
     }
     const map = L.map(mapId, { maxZoom: 20 }).setView(center, zoom);
 
-    // Thunderforest API key comes from config.js (gitignored locally; injected
-    // by the GitHub Pages deploy workflow from the THUNDERFOREST_API_KEY secret).
+    // Basemap selection: Thunderforest only runs in production, where the
+    // GitHub Pages deploy workflow injects config.js with `useThunderforest: true`
+    // AND the real API key (from the THUNDERFOREST_API_KEY secret). Locally there
+    // is no config.js (or no flag), so we fall back to the free CartoDB basemap —
+    // this keeps local exploring from burning the Thunderforest quota.
     // See config.example.js.
-    const tfApiKey = window.__APP_CONFIG__?.thunderforestApiKey || '';
-    const tfUrl = `https://api.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${tfApiKey}`;
-    L.tileLayer(tfUrl, {
-        maxZoom: 19,
-        maxNativeZoom: 19,   // stop *requesting* past here; upscale beyond
-        attribution: '© <a href="https://www.thunderforest.com/">Thunderforest</a>, © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    const cfg = window.__APP_CONFIG__ || {};
+    const useThunderforest = cfg.useThunderforest === true && cfg.thunderforestApiKey;
 
-    }).addTo(map);
+    if (useThunderforest) {
+        const tfUrl = `https://api.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=${cfg.thunderforestApiKey}`;
+        L.tileLayer(tfUrl, {
+            maxZoom: 19,
+            maxNativeZoom: 19,   // stop *requesting* past here; upscale beyond
+            attribution: '© <a href="https://www.thunderforest.com/">Thunderforest</a>, © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+    } else {
+        // Free CartoDB basemap (no key, no quota) — the local/testing default.
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.{ext}', {
+            maxZoom: 20,
+            attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            ext: 'png',
+        }).addTo(map);
+    }
     return map;
 }
 

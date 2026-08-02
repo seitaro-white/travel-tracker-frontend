@@ -86,6 +86,8 @@ Note: The human developer doesn't experience this caching issue in their browser
 - Leaflet.MarkerCluster for clustering
 - leaflet.motion for line animations
 
+**Basemap (local vs production):** `script.js` picks the tile layer from `window.__APP_CONFIG__` — Thunderforest (landscape) only when `useThunderforest === true` *and* a `thunderforestApiKey` is present; otherwise it falls back to the free CartoDB `light_all` basemap. The `useThunderforest` flag is injected only by the GitHub Pages deploy workflow (`.github/workflows/deploy.yml` writes `config.js` from the `THUNDERFOREST_API_KEY` secret), so local dev (`http-server`, no `config.js`) always uses CartoDB and never burns the Thunderforest quota. `config.js` is gitignored; `config.example.js` is the template (flip `useThunderforest` there only for deliberate local Thunderforest testing).
+
 **Vendored in `dist/`:** leaflet.motion, and rough.js (the hand-drawn line renderer — see below).
 
 **Data:** GeoJSON files in `assets/points/` (photos, places, info) and `assets/lines/` (routes, animations, flights)
