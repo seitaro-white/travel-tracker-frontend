@@ -110,7 +110,7 @@ describe('favourites in photos.geojson', () => {
         'favourite %s has a display image on disk',
         (filename, _feature) => {
             // A favourite with no image file would render as an empty card.
-            const imagePath = path.join(projectRoot, 'assets/photos/display', `${filename}.jpg`);
+            const imagePath = path.join(projectRoot, 'assets/photos/display', `${filename}.webp`);
             expect(fs.existsSync(imagePath), `missing ${imagePath}`).toBe(true);
         }
     );
