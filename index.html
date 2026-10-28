@@ -5,35 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Japan Map with Leaflet</title>
+    <!-- No favicon is shipped; avoid an implicit /favicon.ico 404. -->
+    <link rel="icon" href="data:,">
 
-    <!-- 1. Include Leaflet CSS (from CDN) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Runtime config stays a classic script, loaded before the module.
+         Vite serves/emits a default; deployment injects the production settings. -->
+    <script src="./config.js" vite-ignore></script>
 
-    <!-- 2. Include Leaflet JavaScript (from CDN) - BEFORE your script.js -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <!-- Include leaflet.motion plugin -->
-    <!-- Make sure this path is correct based on where you save the file -->
-    <script src="dist/leaflet.motion.min.js"></script>
-
-    <!-- rough.js: gives the static route lines their hand-drawn look.
-         Vendored (like leaflet.motion) rather than pulled from a CDN.
-         Must load before script.js -- see src/features/geojson/roughRenderer.js -->
-    <script src="dist/rough.js"></script>
-
-    <!-- Include Leaflet.markercluster CSS and JS (from CDN) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-
-    <!-- 3. App config (gitignored locally; injected by the deploy workflow).
-         Must load BEFORE script.js so window.__APP_CONFIG__ exists. -->
-    <script src="config.js"></script>
-
-    <!-- 4. Link to your custom JavaScript file -->
-    <script src="script.js" type="module" defer></script>
+    <!-- Vite bundles TypeScript, npm Leaflet/plugins, and their library CSS. -->
+    <script src="./script.ts" type="module"></script>
 
     <!-- 4. Link to your custom CSS files -->
     <link rel="stylesheet" href="style.css">
