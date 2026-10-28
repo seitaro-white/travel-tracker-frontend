@@ -16,8 +16,9 @@ import rough from 'roughjs';
 import type { Options } from 'roughjs/bin/core';
 import type { Point } from 'roughjs/bin/geometry';
 
-// The npm 4.6.6 bundle is byte-identical to the former vendored rough.js.
-// Its headless generator produces SVG path strings without a canvas or DOM.
+// npm 4.6.6's UMD bundle matches the former vendored rough.js byte-for-byte;
+// Vite resolves this import to its ESM build of the same version. The headless
+// generator produces SVG path strings without a canvas or DOM.
 const generator = rough.generator();
 
 // Tuned for map lines specifically. `roughness` and `bowing` are measured in
@@ -46,10 +47,12 @@ class RoughSVG extends L.SVG {
     // Leaflet 1.9.4 calls this private hook with clipped/projected points. Its
     // public types deliberately omit _parts and _setPath, so keep the private
     // contract local rather than weakening all Leaflet layers with `any`.
+    // `declare` describes the inherited method without emitting/replacing it.
+    declare _setPath: (layer: L.Polyline, path: string) => void;
+
     _updatePoly(layer: L.Polyline, closed: boolean) {
         const parts = (layer as L.Polyline & { _parts: L.Point[][] })._parts;
-        const svg = this as unknown as { _setPath(layer: L.Polyline, path: string): void };
-        svg._setPath(layer, roughPointsToPath(parts, closed, seedFor(layer), this.roughOptions));
+        this._setPath(layer, roughPointsToPath(parts, closed, seedFor(layer), this.roughOptions));
     }
 }
 
@@ -71,12 +74,12 @@ function seedFor(layer: L.Layer) {
 /**
  * The hand-drawn counterpart to Leaflet's own `L.SVG.pointsToPath`.
  *
- * @param {Array<Array<L.Point>>} parts - Clipped, simplified pixel points, one
+ * @param parts - Clipped, simplified pixel points, one
  *   array per line part. This is Leaflet's `layer._parts`.
- * @param {boolean} closed - True for polygons, whose rings must be closed.
- * @param {number} seed - Stable per-layer randomness seed (see seedFor).
- * @param {object} roughOptions - Options passed through to rough.js.
- * @returns {string} An SVG path `d` string.
+ * @param closed - True for polygons, whose rings must be closed.
+ * @param seed - Stable per-layer randomness seed (see seedFor).
+ * @param roughOptions - Options passed through to rough.js.
+ * @returns An SVG path `d` string.
  */
 function roughPointsToPath(parts: L.Point[][], closed: boolean, seed: number, roughOptions: Options) {
     let str = '';
@@ -116,8 +119,8 @@ function roughPointsToPath(parts: L.Point[][], closed: boolean, seed: number, ro
  * layers in different renderers stack by renderer, not by the order they were
  * added.
  *
- * @param {object} [roughOptions] - Overrides for DEFAULT_ROUGH_OPTIONS.
- * @returns {L.SVG} A renderer to pass as the `renderer` option of a line style.
+ * @param [roughOptions] - Overrides for DEFAULT_ROUGH_OPTIONS.
+ * @returns A renderer to pass as the `renderer` option of a line style.
  */
 export function createRoughRenderer(roughOptions: Options = {}): L.SVG {
     return new RoughSVG({ ...DEFAULT_ROUGH_OPTIONS, ...roughOptions });

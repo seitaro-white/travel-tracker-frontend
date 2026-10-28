@@ -8,7 +8,7 @@ import { openOverlay } from '../overlays/overlayBase';
  * This function creates and displays a DOM element containing the
  * feature's description, using the shared overlay panel styles.
  *
- * @param {Object} feature - A GeoJSON feature with a 'Description' property.
+ * @param feature - A GeoJSON feature with a 'Description' property.
  */
 export function showInfoOverlay(feature: Feature<Point, InfoProperties>) {
     // Get the description text from the feature properties.
@@ -37,8 +37,8 @@ export function showInfoOverlay(feature: Feature<Point, InfoProperties>) {
  * A callback function for Leaflet's onEachFeature option.
  * It attaches event listeners to each information marker layer.
  *
- * @param {Object} feature - The GeoJSON feature.
- * @param {L.Layer} layer - The Leaflet layer for the feature.
+ * @param feature - The GeoJSON feature.
+ * @param layer - The Leaflet layer for the feature.
  */
 export function onEachInfoFeature(feature: Feature<Point, InfoProperties>, layer: L.Layer) {
     // When the marker is clicked, show the info overlay for that feature.
@@ -51,9 +51,9 @@ export function onEachInfoFeature(feature: Feature<Point, InfoProperties>, layer
  * A callback function for Leaflet's pointToLayer option.
  * It creates a custom marker icon for each information point.
  *
- * @param {Object} feature - The GeoJSON feature.
- * @param {L.LatLng} latlng - The latitude and longitude of the point.
- * @returns {L.Marker} A Leaflet marker with a custom 'i' icon.
+ * @param feature - The GeoJSON feature.
+ * @param latlng - The latitude and longitude of the point.
+ * @returns A Leaflet marker with a custom 'i' icon.
  */
 export function pointToLayerForInfo(feature: Feature<Point, InfoProperties>, latlng: L.LatLng) {
   // Create the HTML for the custom icon. It's a simple div with the letter 'i'.

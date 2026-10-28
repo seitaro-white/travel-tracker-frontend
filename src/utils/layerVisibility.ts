@@ -10,10 +10,10 @@ import type { Layer, Map as LeafletMap } from 'leaflet';
  * `maxZoom` (with a low `minZoom`) gives the inverse: a layer that is only
  * visible when zoomed out, which is how the faint flight arcs are gated.
  *
- * @param {L.Map} map - The Leaflet map instance.
- * @param {L.Layer} layer - The layer to manage.
- * @param {number} minZoom - The minimum zoom level at which the layer should be visible.
- * @param {number} [maxZoom=Infinity] - The maximum zoom level at which the layer should be visible.
+ * @param map - The Leaflet map instance.
+ * @param layer - The layer to manage.
+ * @param minZoom - The minimum zoom level at which the layer should be visible.
+ * @param [maxZoom=Infinity] - The maximum zoom level at which the layer should be visible.
  */
 export function manageLayerVisibilityByZoom(map: LeafletMap, layer: Layer, minZoom: number, maxZoom = Infinity) {
     // This function checks the map's current zoom level and decides whether to show or hide the layer.

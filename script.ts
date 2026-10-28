@@ -49,9 +49,6 @@ function initializeMap(mapId: string) {
         zoom = 6;
     }
     const map = L.map(mapId, { maxZoom: 20 }).setView(center, zoom);
-    // Tests opt in before navigation. Unlike wrapping a CDN global assignment,
-    // this also works after Leaflet has been bundled/minified by Vite.
-    window.__onLeafletMapCreated?.(map);
 
     // Basemap selection: Thunderforest only runs in production, where the
     // GitHub Pages deploy workflow injects config.js with `useThunderforest: true`

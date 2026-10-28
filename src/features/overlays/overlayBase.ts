@@ -21,15 +21,14 @@ type OverlayWrapper = HTMLDivElement & { _overlayCleanup?: () => void };
 /**
  * Opens a full-screen overlay and returns a handle to close it.
  *
- * @param {Object} opts
- * @param {string} opts.wrapperClass - CSS class for the full-screen backdrop wrapper.
- * @param {HTMLElement} opts.panel - The content element placed inside the wrapper.
- * @param {boolean} [opts.dismissOnBackdrop=true] - Clicking the backdrop closes the overlay.
- * @param {boolean} [opts.dismissOnEscape=true] - Pressing Escape closes the overlay.
- * @param {boolean} [opts.gracefulClose=true] - Fade out via CSS before removal (vs. remove immediately).
- * @param {Function} [opts.beforeShow] - Optional async step awaited before fading in (e.g. image load).
- * @param {Function} [opts.onClose] - Called after the overlay has been removed from the DOM.
- * @returns {{ wrapper: HTMLElement, close: () => void }}
+ * @param opts.wrapperClass - CSS class for the full-screen backdrop wrapper.
+ * @param opts.panel - The content element placed inside the wrapper.
+ * @param [opts.dismissOnBackdrop=true] - Clicking the backdrop closes the overlay.
+ * @param [opts.dismissOnEscape=true] - Pressing Escape closes the overlay.
+ * @param [opts.gracefulClose=true] - Fade out via CSS before removal (vs. remove immediately).
+ * @param [opts.beforeShow] - Optional async step awaited before fading in (e.g. image load).
+ * @param [opts.onClose] - Called after the overlay has been removed from the DOM.
+ * @returns The mounted backdrop wrapper and its close handle.
  */
 export function openOverlay({
     wrapperClass,

@@ -2,7 +2,7 @@
  * Smoke test — proves the app loads, the map renders, and no JS crashes occur.
  *
  * This is an integration test: it runs the real app in a real Chromium browser,
- * served by Vite (auto-started via playwright.config.js webServer).
+ * served by Vite (auto-started via playwright.config.ts webServer).
  * Python analogy: like a requests-based integration test that hits a real
  * running server rather than mocking the HTTP layer.
  *

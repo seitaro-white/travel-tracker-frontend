@@ -11,7 +11,7 @@ This is a travel visualization application displaying an interactive map of a Ja
 Use Node 24 and run `npm ci` after cloning.
 
 - `npm run dev` — Vite on `0.0.0.0:5173` (strict port): open `http://localhost:5173` from the Docker host, or `http://pi-box:5173` from Browserless.
-- `npm run typecheck` — `tsc --noEmit`, including application and TypeScript tests. Vite transpiles without typechecking, so run this separately.
+- `npm run typecheck` — run `tsc --noEmit` on both configs. `tsconfig.json` checks `script.ts` and `src/` with DOM/Vite types and no Node globals; `tsconfig.node.json` checks tests and Vite/Vitest/Playwright configs with Node types. The latter retains DOM types for Playwright's browser callbacks. Vite transpiles without typechecking, so run this separately.
 - `npm run build` — emit the deployable site into gitignored `dist/`.
 - `npm run preview -- --port 5174 --strictPort` — serve the production build for verification. Browserless reaches it at `http://pi-box:5174`.
 
@@ -43,7 +43,7 @@ tests/
   favouritePhotos.test.ts     # carousel selection + every favourite has a display image
   staticAssets.test.ts        # fetched HTML fragments reference shipped images
   e2e/
-    mapTestHarness.ts         # shared: animation stubs, map-created callback, intro dismissal (not a spec)
+    mapTestHarness.ts         # shared: animation stubs, window.L interception, intro dismissal (not a spec)
     smoke.spec.ts             # Leaflet container + tile + marker load, no JS errors
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
     full-integration.spec.ts  # place markers visible after animation + zoom
@@ -65,10 +65,10 @@ tests/
 
 **Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `src/utils/layerVisibility.ts`, wired up from `script.ts`). The full integration test handles this by:
 1. Intercepting `incoming_flight.geojson` and `animation_tracks.geojson` via `page.route()` and returning 2-point stub GeoJSON — the animation chain then completes in ~10ms instead of 20–30 seconds.
-2. Installing `window.__onLeafletMapCreated` via `page.addInitScript()`. `initializeMap()` calls it with the real map, and the test stores that as `window.__leafletMap`. The old CDN-global setter no longer works with bundled Leaflet.
+2. Defining a setter on `window.L` via `page.addInitScript()`. `leafletGlobal.ts` assigns the shared npm Leaflet object before the app runs; the setter wraps its mutable `map()` factory and stores the result as `window.__leafletMap`. This works in Vite dev and production without a production-only test hook.
 3. Calling `window.__leafletMap.setZoom(12, { animate: false })` to zoom in and trigger `zoomend`.
 
-**Leaflet has no public map registry** — `document.getElementById('map')._leaflet_map` does NOT exist in Leaflet 1.9.4. The opt-in callback pattern (in `captureLeafletMap()` in `mapTestHarness.ts`) is the correct way to get programmatic access to the map in tests.
+**Leaflet has no public map registry** — `document.getElementById('map')._leaflet_map` does NOT exist in Leaflet 1.9.4. The `window.L` interception pattern (in `captureLeafletMap()` in `mapTestHarness.ts`) is the correct way to get programmatic access to the map in tests.
 
 ### Known data bug (tracked in todo.MD)
 `public/assets/points/photos.geojson` feature index 748 is a blank record (`geometry: null`, all properties null). The schema test logs it but doesn't fail on it.
@@ -109,7 +109,7 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 ## Architecture
 
-**Entry Point:** `index.html` → `script.ts` (bundled by Vite). `src/types/geojson.ts` defines the dataset property contracts; `src/types/browser.d.ts` describes runtime config and the opt-in E2E callback.
+**Entry Point:** `index.html` → `script.ts` (bundled by Vite). `src/types/geojson.ts` defines the dataset property contracts; `src/types/browser.d.ts` describes runtime config, the shared legacy-plugin global, and the optional test-captured map.
 
 **Feature-based module organization:**
 - `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker). Attach `Ended` before `addTo(map)`: auto-start can finish a zero/tiny-distance route synchronously.
@@ -120,8 +120,8 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 - `src/utils/` - Generic, feature-agnostic map helpers (e.g. `layerVisibility.ts`)
 
 **Key libraries (bundled):**
-- npm Leaflet 1.9.4 and Leaflet.markercluster 1.5.3, with their CSS and `@types` packages.
-- npm roughjs 4.6.6, byte-identical to the former vendored bundle.
+- npm Leaflet 1.9.4 and Leaflet.markercluster pinned to 1.4.1 (matching the old CDN), with their CSS and `@types` packages. A scoped npm override lets markercluster use the app's Leaflet version despite its obsolete `~1.3.1` peer declaration; no global legacy-peer mode is needed for `npm ci`.
+- npm roughjs 4.6.6. Its UMD bundle is byte-identical to the former vendored file; Vite imports the ESM build of that version.
 - Vendored leaflet.motion 0.3.2 in `src/vendor/`, with a small declaration of the API the app uses.
 
 `src/lib/leaflet.ts` is the shared import for browser code. Its first dependency (`leafletGlobal.ts`) sets `window.L` to the npm Leaflet object before the legacy plugins execute, so they extend the same instance the app uses. Data-only `fetchGeoJson.ts` stays independent of Leaflet so unit tests can run in Node. Font Awesome and Google Fonts remain CDN-loaded.

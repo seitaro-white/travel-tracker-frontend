@@ -7,11 +7,10 @@ import { fetchGeoJson } from '../geojson/fetchGeoJson';
  * The line itself is invisible; only the marker moves.
  * Returns a promise that resolves when the animation finishes.
  *
- * @param {L.Map} map - The Leaflet map instance.
- * @param {string} filePath - Path to the GeoJSON file (should contain a single LineString).
- * @param {string} svgPath - Path to the SVG file used as the moving marker icon.
- * @param {number} [speed=1500000] - Animation speed (km/h, as expected by leaflet.motion).
- * @returns {Promise<void>}
+ * @param map - The Leaflet map instance.
+ * @param filePath - Path to the GeoJSON file (should contain a single LineString).
+ * @param svgPath - Path to the SVG file used as the moving marker icon.
+ * @param [speed=1500000] - Animation speed (km/h, as expected by leaflet.motion).
  */
 export async function animateMarkerAlongLine(map: L.Map, filePath: string, svgPath: string, speed = 1500000) {
     // Fetch the GeoJSON data

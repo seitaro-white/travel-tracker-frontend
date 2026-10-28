@@ -27,9 +27,9 @@ const ARC_CURVATURE = 0.2;
  * visually indistinguishable from a "proper" great-circle arc and is far
  * simpler.
  *
- * @param {[number, number]} start - [lat, lng] of the origin airport.
- * @param {[number, number]} end - [lat, lng] of the destination airport.
- * @returns {Array<[number, number]>} Sampled [lat, lng] points along the arc.
+ * @param start - [lat, lng] of the origin airport.
+ * @param end - [lat, lng] of the destination airport.
+ * @returns Sampled [lat, lng] points along the arc.
  */
 function buildArcPoints(start: L.LatLngTuple, end: L.LatLngTuple): L.LatLngTuple[] {
     const [lat1, lng1] = start;
@@ -82,9 +82,9 @@ function buildArcPoints(start: L.LatLngTuple, end: L.LatLngTuple): L.LatLngTuple
  * the other static line layers (it supports eachLayer, addTo, etc.) so it can
  * be faded in and zoom-gated the same way.
  *
- * @param {string} filePath - Path to the flights GeoJSON file.
- * @param {object} style - Leaflet path style applied to every flight arc.
- * @returns {Promise<L.FeatureGroup>} The group of arced flight polylines.
+ * @param filePath - Path to the flights GeoJSON file.
+ * @param style - Leaflet path style applied to every flight arc.
+ * @returns The group of arced flight polylines.
  */
 export async function createArcedFlightLayer(filePath: string, style: L.PolylineOptions) {
     const geojson = await fetchGeoJson<FeatureCollection<LineString, FlightProperties>>(filePath);

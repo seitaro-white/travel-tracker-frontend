@@ -194,13 +194,14 @@ test('tapping the top card flies the map and opens the blow-up', async ({ page }
     await openAppAndDismissIntro(page);
 
     const before = await page.evaluate(() => {
-        const { lat, lng } = window.__leafletMap.getCenter();
-        return { lat, lng, zoom: window.__leafletMap.getZoom() };
+        const map = window.__leafletMap!;
+        const { lat, lng } = map.getCenter();
+        return { lat, lng, zoom: map.getZoom() };
     });
     // What the carousel should actually land on: its own target, unless the map
     // caps zoom lower than that. Read from the page so this test keeps passing
     // when the map's maxZoom is retuned for a new basemap.
-    const target = await page.evaluate(() => Math.min(13, window.__leafletMap.getMaxZoom()));
+    const target = await page.evaluate(() => Math.min(13, window.__leafletMap!.getMaxZoom()));
     // The map starts zoomed out over Japan, well short of wherever it will land.
     expect(before.zoom).toBeLessThan(target);
 
@@ -215,11 +216,12 @@ test('tapping the top card flies the map and opens the blow-up', async ({ page }
     // way, so wait for it to land on exactly the target rather than sampling
     // mid-arc. flyTo ignores the map's maxZoom, so landing above `target` would
     // mean the carousel is punching through the map's own ceiling.
-    await page.waitForFunction(z => window.__leafletMap.getZoom() === z, target, { timeout: 8000 });
+    await page.waitForFunction(z => window.__leafletMap?.getZoom() === z, target, { timeout: 8000 });
 
     const after = await page.evaluate(() => {
-        const { lat, lng } = window.__leafletMap.getCenter();
-        return { lat, lng, zoom: window.__leafletMap.getZoom() };
+        const map = window.__leafletMap!;
+        const { lat, lng } = map.getCenter();
+        return { lat, lng, zoom: map.getZoom() };
     });
     // The centre actually moved to the photo, rather than just zooming in place.
     expect(Math.abs(after.lat - before.lat) + Math.abs(after.lng - before.lng)).toBeGreaterThan(0.01);
@@ -228,8 +230,9 @@ test('tapping the top card flies the map and opens the blow-up', async ({ page }
     await page.locator('.polaroid-animated-wrapper-overlay').click({ position: { x: 5, y: 5 } });
     await expect(page.locator('.polaroid-animated-wrapper-overlay')).toHaveCount(0);
     const settled = await page.evaluate(() => {
-        const { lat, lng } = window.__leafletMap.getCenter();
-        return { lat, lng, zoom: window.__leafletMap.getZoom() };
+        const map = window.__leafletMap!;
+        const { lat, lng } = map.getCenter();
+        return { lat, lng, zoom: map.getZoom() };
     });
     expect(settled).toEqual(after);
 });

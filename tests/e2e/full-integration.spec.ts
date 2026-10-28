@@ -18,8 +18,8 @@ import { test, expect } from '@playwright/test';
 import { captureLeafletMap, stubIntroAnimations, SETUP_TIMEOUT } from './mapTestHarness';
 
 test('place markers appear after animation, when zoomed in', async ({ page }) => {
-    // Install the map-created callback before navigation so the test can zoom
-    // the real bundled Leaflet map programmatically.
+    // Intercept the shared window.L assignment before navigation so the test
+    // can zoom the real bundled Leaflet map programmatically.
     await captureLeafletMap(page);
 
     const jsErrors: string[] = [];
@@ -47,11 +47,11 @@ test('place markers appear after animation, when zoomed in', async ({ page }) =>
     // animate: false makes zoomend fire synchronously, so the marker layer
     // is added to the DOM before the next assertion runs.
     await page.evaluate(() => {
-        window.__leafletMap.setZoom(12, { animate: false });
+        window.__leafletMap!.setZoom(12, { animate: false });
     });
 
     // Confirm the map is actually at zoom ≥ 10 before checking for markers.
-    await page.waitForFunction(() => window.__leafletMap?.getZoom() >= 10);
+    await page.waitForFunction(() => (window.__leafletMap?.getZoom() ?? 0) >= 10);
 
     // Place markers should now be visible.
     await expect(page.locator('.place-marker').first()).toBeVisible({ timeout: 5000 });

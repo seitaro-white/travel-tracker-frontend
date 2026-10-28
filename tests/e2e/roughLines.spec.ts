@@ -29,7 +29,7 @@ const TOKYO: LatLngTuple = [35.70, 139.70];
 async function staticLinePaths(page: Page) {
     return page.evaluate(() => {
         const ds: string[] = [];
-        window.__leafletMap.eachLayer((layer) => {
+        window.__leafletMap!.eachLayer((layer) => {
             // Line features live inside L.geoJSON / L.featureGroup wrappers.
             if (!('eachLayer' in layer)) return;
             (layer as import('leaflet').LayerGroup).eachLayer((feature) => {
@@ -48,7 +48,7 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/');
     // The intro overlay is every spec's "setup finished" signal.
     await page.waitForSelector('.overlay-panel-close', { timeout: SETUP_TIMEOUT });
-    await page.evaluate((c) => window.__leafletMap.setView(c, 12, { animate: false }), TOKYO);
+    await page.evaluate((c) => window.__leafletMap!.setView(c, 12, { animate: false }), TOKYO);
 });
 
 test('static lines are drawn as hand-drawn paths, not straight segments', async ({ page }) => {
@@ -71,7 +71,7 @@ test('the wobble is stable across redraws, so lines do not shimmer', async ({ pa
     // seed the generated paths must be identical too. Without the seed rough
     // re-rolls its randomness here and the lines visibly jump.
     await page.evaluate(() => {
-        window.__leafletMap.eachLayer((layer) => {
+        window.__leafletMap!.eachLayer((layer) => {
             if (!('eachLayer' in layer)) return;
             (layer as import('leaflet').LayerGroup).eachLayer((feature) => (feature as VectorLayer)._reset?.());
         });

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
@@ -35,7 +35,12 @@
   },
   "dependencies": {
     "leaflet": "^1.9.4",
-    "leaflet.markercluster": "^1.5.3",
+    "leaflet.markercluster": "1.4.1",
     "roughjs": "^4.6.6"
+  },
+  "overrides": {
+    "leaflet.markercluster": {
+      "leaflet": "$leaflet"
+    }
   }
 }

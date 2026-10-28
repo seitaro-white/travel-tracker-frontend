@@ -11,8 +11,8 @@ import { showAnimatedPolaroid } from '../overlays/polaroidOverlay';
  * When a marker is clicked, it shows the animated polaroid overlay.
  * Also sets up mouseover/mouseout for marker hover effects.
  *
- * @param {Object} feature - The GeoJSON feature for the photo.
- * @param {L.Layer} layer - The Leaflet marker layer.
+ * @param feature - The GeoJSON feature for the photo.
+ * @param layer - The Leaflet marker layer.
  */
 export function onEachPhotoFeature(feature: Feature<Point, PhotoProperties>, layer: L.Layer) {
     // If the feature has a valid photo filename, attach a click event that shows the polaroid overlay.
@@ -50,9 +50,9 @@ export function onEachPhotoFeature(feature: Feature<Point, PhotoProperties>, lay
  * Callback function to create a custom marker for photo features.
  * Returns a Leaflet marker with a circular photo thumbnail.
  *
- * @param {Object} feature - The GeoJSON feature for the photo.
- * @param {L.LatLng} latlng - The marker's location.
- * @returns {L.Marker} - The Leaflet marker.
+ * @param feature - The GeoJSON feature for the photo.
+ * @param latlng - The marker's location.
+ * @returns The Leaflet marker.
  */
 export function pointToLayerForPhotos(feature: Feature<Point, PhotoProperties>, latlng: L.LatLng) {
     if (feature.properties && feature.properties.filename) {

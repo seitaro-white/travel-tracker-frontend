@@ -86,12 +86,12 @@ test.describe('phone', () => {
         expect(centre.inStack, 'the resting pile must not leave a dead zone').toBe(false);
 
         // And prove it for real: a drag across the centre must pan the map.
-        const before = await page.evaluate(() => window.__leafletMap.getCenter());
+        const before = await page.evaluate(() => window.__leafletMap!.getCenter());
         await page.mouse.move(120, 422);
         await page.mouse.down();
         for (let step = 1; step <= 8; step++) await page.mouse.move(120 + (120 * step) / 8, 422);
         await page.mouse.up();
-        const after = await page.evaluate(() => window.__leafletMap.getCenter());
+        const after = await page.evaluate(() => window.__leafletMap!.getCenter());
         expect(after.lng).not.toBeCloseTo(before.lng, 5);
 
         expect(jsErrors, `Unexpected JS errors: ${jsErrors.join('; ')}`).toHaveLength(0);
@@ -137,7 +137,7 @@ test.describe('phone', () => {
         await openAppAndDismissIntro(page);
         await openSheet(page);
 
-        const mapBefore = await page.evaluate(() => window.__leafletMap.getCenter());
+        const mapBefore = await page.evaluate(() => window.__leafletMap!.getCenter());
         const first = await page.locator('.polaroid-mini[data-depth="0"] img').getAttribute('src');
 
         const card = (await page.locator('.polaroid-mini[data-depth="0"]').boundingBox())!;
@@ -158,7 +158,7 @@ test.describe('phone', () => {
         // surface, not a child, so a swipe never reaches the sheet's handlers.
         await expect(page.locator('.polaroid-stack.is-collapsed')).toHaveCount(0);
         // And a sweep still leaves the map alone; only a tap commits.
-        const mapAfter = await page.evaluate(() => window.__leafletMap.getCenter());
+        const mapAfter = await page.evaluate(() => window.__leafletMap!.getCenter());
         expect(mapAfter.lng).toBeCloseTo(mapBefore.lng, 5);
     });
 
@@ -203,14 +203,14 @@ test.describe('phone', () => {
         await openAppAndDismissIntro(page);
         await openSheet(page);
 
-        const before = await page.evaluate(() => window.__leafletMap.getCenter());
+        const before = await page.evaluate(() => window.__leafletMap!.getCenter());
         await page.locator('.polaroid-mini[data-depth="0"]').click();
 
         // The payoff is unchanged from a marker click: the blow-up rises while
         // the map flies underneath it.
         await expect(page.locator('.polaroid')).toBeVisible();
         await expect.poll(
-            async () => (await page.evaluate(() => window.__leafletMap.getCenter())).lat,
+            async () => (await page.evaluate(() => window.__leafletMap!.getCenter())).lat,
             { timeout: 5000 }
         ).not.toBeCloseTo(before.lat, 3);
 

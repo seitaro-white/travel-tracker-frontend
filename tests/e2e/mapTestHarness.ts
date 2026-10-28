@@ -17,9 +17,9 @@
  *
  * 2. Leaflet has no public map registry, so a test cannot reach the map object.
  *    document.getElementById('map')._leaflet_map does NOT exist in Leaflet
- *    1.9.4. Fix — install an opt-in callback before navigation. The app calls
- *    it immediately after creating its bundled Leaflet map. The old CDN-global
- *    setter cannot capture a module import.
+ *    1.9.4. Fix — intercept the window.L assignment made by leafletGlobal.ts
+ *    before the app starts, and wrap that object's map factory. This captures
+ *    the actual map without adding a test hook to production code.
  *
  * The real GeoJSON and Leaflet rendering paths still run; only the animation
  * distance is shortened.
@@ -79,13 +79,25 @@ const TINY_ANIMATION_TRACKS = {
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 /**
- * Init scripts run before the bundled entry point. Installing the callback here
- * captures the real map in both Vite dev and production without exposing a map
- * registry to ordinary visitors (the app never sets __leafletMap itself).
+ * leafletGlobal.ts assigns the shared npm Leaflet object to window.L for the
+ * legacy plugins. An init-script setter can wrap its mutable map factory before
+ * the entry point uses it, in dev and production alike. Only tests get a map
+ * registry; no app-side test hook is needed.
  */
 export async function captureLeafletMap(page: Page) {
     await page.addInitScript(() => {
-        window.__onLeafletMapCreated = map => { window.__leafletMap = map; };
+        Object.defineProperty(window, 'L', {
+            configurable: true,
+            set(leaflet: typeof window.L) {
+                Object.defineProperty(window, 'L', { value: leaflet, writable: true, configurable: true });
+                const originalMap = leaflet.map;
+                leaflet.map = (...args: Parameters<typeof originalMap>) => {
+                    const map = originalMap(...args);
+                    window.__leafletMap = map;
+                    return map;
+                };
+            },
+        });
     });
 }
 
@@ -100,7 +112,7 @@ export async function captureLeafletMap(page: Page) {
  * (real filenames, real coordinates, real priority flags) while cutting the
  * bytes by two orders of magnitude.
  *
- * @param {number} count - How many favourites to serve. Needs to exceed the
+ * @param count - How many favourites to serve. Needs to exceed the
  *   pile's card count for cycling tests to show distinct photos.
  */
 export async function stubFavouritePhotos(page: Page, count = 8) {
