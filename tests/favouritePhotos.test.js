@@ -11,11 +11,10 @@
  * (already covered in geojsonService.test.js) to the two functions below.
  */
 
-import { describe, it, expect } from 'vitest';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { isFavouritePhoto, shuffle } from '../src/features/carousel/favouritePhotos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -119,8 +118,8 @@ describe('favourites in photos.geojson', () => {
         'favourite %s has finite coordinates to fly to',
         (_filename, feature) => {
             const [longitude, latitude] = feature.geometry.coordinates;
-            expect(isFinite(longitude)).toBe(true);
-            expect(isFinite(latitude)).toBe(true);
+            expect(Number.isFinite(longitude)).toBe(true);
+            expect(Number.isFinite(latitude)).toBe(true);
         }
     );
 });

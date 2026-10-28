@@ -13,7 +13,6 @@ export const placeEmojis = {
     "ピザ": "🍕",            // Pizza: decomposed Unicode, matching placeList in places.geojson.
     "温泉": "♨️",            // Admin
     "トンアシア": "🥗",            // Admin
-    "公園": "⛲️",            // Admin
     "寿司": "🍣",            // Admin
     "中華": "🥟",            // Admin
     "焼肉": "🥩",            // Admin
