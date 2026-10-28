@@ -20,6 +20,7 @@ for (const phone of [false, true]) {
             const card = page.locator('.intro-card');
             const overlay = page.locator('.intro-card-overlay');
             await expect(card).not.toHaveClass(/is-flipped/);
+            await expect(card).not.toBeFocused();
             await expect(page.locator('.about-button')).toHaveCount(0);
             await expect(page.locator('.polaroid-stack')).toHaveCount(0);
             await page.keyboard.press('Escape');
