@@ -27,7 +27,7 @@ test('app loads and map renders without JS errors', async ({ page }) => {
     const jsErrors = [];
     page.on('pageerror', err => jsErrors.push(err.message));
 
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     // 1. The Leaflet container must be in the DOM and visible.
     //    This is the <div id="map"> that Leaflet transforms into a map widget.

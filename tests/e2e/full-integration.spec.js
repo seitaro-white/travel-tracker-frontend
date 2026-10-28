@@ -28,7 +28,7 @@ test('place markers appear after animation, when zoomed in', async ({ page }) =>
     // Shortcut the animation chain so the rest of setupMap() runs immediately.
     await stubIntroAnimations(page);
 
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     // Map container renders.
     await expect(page.locator('.leaflet-container')).toBeVisible();

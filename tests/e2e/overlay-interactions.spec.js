@@ -60,7 +60,7 @@ test('info overlay opens on marker click and closes via Escape and backdrop', as
     await page.route('**/photos.geojson', route =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify(EMPTY_FC) }));
 
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     // Intro overlay is the "setup done" signal; dismiss it via Continue. Generous
     // timeout: setup is gated behind cold CDN bundle loads under worker contention.

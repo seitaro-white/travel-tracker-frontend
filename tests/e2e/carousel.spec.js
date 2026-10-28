@@ -49,7 +49,7 @@ test('the pile slides in once the intro is dismissed', async ({ page }) => {
     await captureLeafletMap(page);
     await stubIntroAnimations(page);
     await stubFavouritePhotos(page);
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
     // The pile must NOT be there yet — it is the intro's closing beat, not part
@@ -80,7 +80,7 @@ test('no pile is built when no photos are flagged as favourites', async ({ page 
     await page.route('**/photos.geojson', route =>
         route.fulfill({ contentType: 'application/json', body: JSON.stringify({ type: 'FeatureCollection', features: [] }) })
     );
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
     await page.locator('.overlay-panel-close').click();
