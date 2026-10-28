@@ -49,7 +49,7 @@ tests/
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
     full-integration.spec.ts  # place markers visible after animation + zoom
     overlay-interactions.spec.ts # openOverlay dismissal paths (Escape, backdrop)
-    intro-card.spec.ts        # modal flip/toss, reopening, keyboard, touch legend
+    intro-card.spec.ts        # modal flip/toss, reopening, legend input, landscape scrolling
     carousel.spec.ts          # desktop drawer: mount, cycle, fly-to, collapse
     carousel-sheet.spec.ts    # phone: resting pile + bottom sheet (viewport set via test.use)
     roughLines.spec.ts        # hand-drawn renderer: bezier output + stable seed
@@ -138,7 +138,7 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 **Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
 
-**Intro card:** `showIntroCard` presents a cream, handwritten back that gently wobbles. Clicking or pressing Enter/Space flips it to a fixed placeholder photo (`INTRO_PHOTO` in `introCard.ts`) and welcome text; a second activation tosses it down-left. Input is ignored during the 700ms flip. The first visit ignores Escape/backdrop; its `onClose` mounts the pile and the separate About button below the top-right legend. About reopens it photo-up, with card/backdrop/Escape all tossing it away and no second pile. `openOverlay`'s `onClosing` starts the toss; `onClose` runs after the scrim fades and the wrapper is removed. The legend supports both mouse hover and tap-to-toggle (hover CSS is limited to hover-capable devices so touch can close it).
+**Intro card:** Only the first-visit `showIntroCard` call passes `onClose`, so reopening never mounts a second pile. `openOverlay`'s `onClosing` starts the toss for every dismissal path. Legend hover CSS is limited to hover-capable devices so a tap can close the key.
 
 **Favourite photo carousel:** a pile of four askew mini polaroids, mounted as the closing beat of the intro via `showIntroCard`'s `onClose`. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
 

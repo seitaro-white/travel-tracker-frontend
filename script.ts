@@ -168,7 +168,10 @@ async function setupLegend() {
     legendIcon.className = 'legend-icon';
     legendIcon.setAttribute('aria-label', 'Map key');
     legendIcon.innerHTML = '<i class="fa fa-map-o" aria-hidden="true"></i>';
-    legendIcon.addEventListener('click', () => legendContainer.classList.toggle('is-open'));
+    legendIcon.addEventListener('click', () => {
+        // Mouse users keep pure hover behaviour; a click must not pin the key open.
+        if (!window.matchMedia('(hover: hover)').matches) legendContainer.classList.toggle('is-open');
+    });
     legendContainer.appendChild(legendIcon);
 
     // Fetch the mini map key HTML and insert it right after the icon.
