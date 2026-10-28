@@ -43,6 +43,7 @@ tests/
   favouritePhotos.test.ts     # carousel selection + every favourite has a display image
   staticAssets.test.ts        # fetched HTML fragments reference shipped images
   e2e/
+    fixtures.ts              # shared test/expect exports; basemap tiles stubbed before navigation
     mapTestHarness.ts         # shared: animation stubs, window.L interception, intro dismissal (not a spec)
     smoke.spec.ts             # Leaflet container + tile + marker load, no JS errors
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
@@ -52,6 +53,8 @@ tests/
     carousel-sheet.spec.ts    # phone: resting pile + bottom sheet (viewport set via test.use)
     roughLines.spec.ts        # hand-drawn renderer: bezier output + stable seed
 ```
+
+**E2E specs import `test` and `expect` from `fixtures.ts`**, which serves a small synthetic tile for both OpenStreetMap and Thunderforest. This keeps automated pan/zoom tests off community servers and avoids using production quota. It does not affect the local dev map. The smoke test checks Leaflet's tile-loading lifecycle against this fixture, not the external provider's availability.
 
 **E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
 
@@ -126,9 +129,9 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 `src/lib/leaflet.ts` is the shared import for browser code. Its first dependency (`leafletGlobal.ts`) sets `window.L` to the npm Leaflet object before the legacy plugins execute, so they extend the same instance the app uses. Data-only `fetchGeoJson.ts` stays independent of Leaflet so unit tests can run in Node. Font Awesome and Google Fonts remain CDN-loaded.
 
-**Basemap (local vs production):** `script.ts` reads `window.__APP_CONFIG__` — Thunderforest (landscape) only when `useThunderforest === true` *and* a `thunderforestApiKey` is present; otherwise the existing CartoDB `light_all` fallback is preserved. Only the Pages workflow injects the production flag/key into `dist/config.js`; local dev defaults to empty settings and never burns the Thunderforest quota. The key is public in the deployed browser config, not a server-side secret.
+**Basemap (local vs production):** `script.ts` reads `window.__APP_CONFIG__` — Thunderforest (landscape) only when `useThunderforest === true` *and* a `thunderforestApiKey` is present; otherwise it uses standard OpenStreetMap tiles (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`), with no account or key needed. Only the Pages workflow injects the production flag/key into `dist/config.js`; local dev defaults to empty settings and never burns the Thunderforest quota. The key is public in the deployed browser config, not a server-side secret. OSM tiles stop at zoom 19; `maxNativeZoom: 19` upscales them at the map's existing zoom-20 ceiling.
 
-**Known external tile issue:** During the TypeScript port, CartoDB returned HTTP-200 images labelled “API KEY REQUIRED.” This is invisible to console-error checks. The fallback is deliberately unchanged; choosing a new provider is separate work.
+**OpenStreetMap usage:** Keep visible attribution and normal browser caching; do not bulk-download or prefetch tiles ([tile policy](https://operations.osmfoundation.org/policies/tiles/)). The community service is best-effort, not an unlimited commercial tile API. It replaces the former CartoDB fallback, which now requires a key.
 
 **Build output:** `dist/` is now exclusively disposable Vite output. Vendored motion code lives in `src/vendor/`, so building cannot erase it.
 

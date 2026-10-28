@@ -16,7 +16,7 @@
  * via dispatchEvent('click') so the test does not depend on marker position.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 import { captureLeafletMap } from './mapTestHarness';
 

@@ -15,7 +15,7 @@
  * Run this file only: npx playwright test carousel-sheet
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import { openAppAndDismissIntro } from './mapTestHarness';
 
 // Roughly an iPhone 14: comfortably inside the 700px breakpoint, and tall

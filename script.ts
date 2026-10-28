@@ -53,7 +53,7 @@ function initializeMap(mapId: string) {
     // Basemap selection: Thunderforest only runs in production, where the
     // GitHub Pages deploy workflow injects config.js with `useThunderforest: true`
     // AND the real API key (from the THUNDERFOREST_API_KEY secret). Locally there
-    // is no config.js (or no flag), so we fall back to the free CartoDB basemap —
+    // is no config.js (or no flag), so we use keyless OpenStreetMap tiles —
     // this keeps local exploring from burning the Thunderforest quota.
     // See config.example.js.
     const cfg = window.__APP_CONFIG__ || {};
@@ -67,9 +67,12 @@ function initializeMap(mapId: string) {
             attribution: '© <a href="https://www.thunderforest.com/">Thunderforest</a>, © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
     } else {
-        // Free CartoDB basemap (no key, no quota) — the local/testing default.
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        // Standard OSM tiles need no key. Normal browser caching and visible
+        // attribution satisfy their interactive-use requirements; E2Es stub tiles
+        // rather than send repeated automated pan/zoom requests to the service.
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 20,
+            maxNativeZoom: 19, // OSM stops at 19; upscale at the map's zoom-20 ceiling.
             attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(map);
     }

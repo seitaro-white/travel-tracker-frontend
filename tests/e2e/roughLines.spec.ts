@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './fixtures';
 import type { LatLngTuple, Layer } from 'leaflet';
 
 // These tests intentionally inspect/redraw Leaflet 1.9.4's private SVG paths.
