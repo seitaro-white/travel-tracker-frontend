@@ -14,18 +14,16 @@ browserEndpoint.searchParams.set('timeout', '300000');
 
 export default defineConfig({
     testDir: './tests/e2e',
-    // Keep within the sidecar's session limit and avoid concurrent CDN loads.
+    // Keep within the sidecar's session limit and avoid concurrent tile/photo loads.
     workers: 1,
     timeout: 60000,
-    // One retry: setup is gated behind cold CDN bundle loads (Leaflet, markercluster
-    // from unpkg). Under worker contention a cold load can occasionally exceed the
-    // setup wait. The retry only costs time when a flake actually occurs.
+    // One retry for cold tile/photo loads under worker contention.
     retries: 1,
-    // Start http-server automatically before the suite; stop it after.
+    // Start Vite automatically before the suite; stop it after.
     // reuseExistingServer: true means it won't fail if you already have
     // the server running in another terminal (handy during development).
     webServer: {
-        command: 'npm run dev -- --silent',
+        command: 'npm run dev -- --logLevel silent',
         // Readiness is checked here in pi-box, not in the remote browser.
         url: 'http://localhost:5173',
         reuseExistingServer: true,

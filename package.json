@@ -1,11 +1,13 @@
 {
   "name": "travel-tracker-frontend",
   "version": "1.0.0",
-  "description": "This is the frontend application for my travel tracker project, which visualizes my trip to Japan using an interactive map. It's built with vanilla JavaScript (ES6 modules) and uses the Leaflet library for mapping functionalities.",
-  "main": "script.js",
+  "description": "This is the frontend application for my travel tracker project, which visualizes my trip to Japan using an interactive map. It's built with vanilla TypeScript and Vite and uses the Leaflet library for mapping functionalities.",
   "type": "module",
   "scripts": {
-    "dev": "http-server . -a 0.0.0.0 -p 5173",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
@@ -23,7 +25,17 @@
   "homepage": "https://github.com/seitaro-white/travel-tracker-frontend#readme",
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "http-server": "^14.1.1",
+    "@types/geojson": "^7946.0.16",
+    "@types/leaflet": "^1.9.22",
+    "@types/leaflet.markercluster": "^1.5.6",
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
     "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
+    "roughjs": "^4.6.6"
   }
 }
