@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { captureLeafletMap, stubFavouritePhotos, SETUP_TIMEOUT } from './mapTestHarness';
 
 // The motion plugin can emit Ended inside addTo(). A degenerate two-point

@@ -21,11 +21,11 @@
  *    before the app starts, and wrap that object's map factory. This captures
  *    the actual map without adding a test hook to production code.
  *
- * The real GeoJSON and Leaflet rendering paths still run; only the animation
- * distance is shortened.
+ * The real GeoJSON and Leaflet rendering paths still run; the animation
+ * distance is shortened and fixtures.ts substitutes basemap tile images.
  */
 
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page } from './fixtures';
 import type { Photos } from '../../src/types/geojson';
 import { isFavouritePhoto } from '../../src/features/carousel/favouritePhotos';
 import fs from 'fs';
@@ -35,7 +35,7 @@ import { fileURLToPath } from 'url';
 /**
  * How long to wait for the intro overlay, which is every spec's "setup is done"
  * signal. Generous on purpose: even with the animations stubbed to milliseconds,
- * setup still loads real GeoJSON, tiles, and photos; under worker contention
+ * setup still loads real GeoJSON and photos; under worker contention
  * those requests can run long. Shared so the specs
  * can't drift apart and leave one of them marginal.
  */

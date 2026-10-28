@@ -2,7 +2,7 @@
 //
 // Template for config.js (which is gitignored). Copy this file to config.js
 // ONLY if you want to test the Thunderforest basemap locally; otherwise leave
-// it absent and the app uses the free CartoDB basemap by default.
+// it absent and the app uses keyless OpenStreetMap tiles by default.
 //
 //   cp config.example.js config.js
 //
@@ -16,6 +16,6 @@
 // your API quota while you explore.
 
 window.__APP_CONFIG__ = {
-    useThunderforest: false,       // leave false to use the free CartoDB basemap
+    useThunderforest: false,       // leave false to use keyless OpenStreetMap tiles
     thunderforestApiKey: '',       // <- paste your Thunderforest API key here
 };

@@ -14,7 +14,7 @@
  * Run this file only: npx playwright test full-integration
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { captureLeafletMap, stubIntroAnimations, SETUP_TIMEOUT } from './mapTestHarness';
 
 test('place markers appear after animation, when zoomed in', async ({ page }) => {
