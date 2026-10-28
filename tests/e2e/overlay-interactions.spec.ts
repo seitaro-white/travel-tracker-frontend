@@ -53,8 +53,8 @@ test('info overlay opens on marker click and closes via Escape and backdrop', as
     await expect(page.locator('.overlay-panel-overlay')).toBeHidden();
 
     // Zoom in so the info layer (zoom ≥ 10) is added to the map.
-    await page.evaluate(() => window.__leafletMap.setZoom(12, { animate: false }));
-    await page.waitForFunction(() => window.__leafletMap?.getZoom() >= 10);
+    await page.evaluate(() => window.__leafletMap!.setZoom(12, { animate: false }));
+    await page.waitForFunction(() => (window.__leafletMap?.getZoom() ?? 0) >= 10);
     await expect(page.locator('.info-marker-icon').first()).toBeVisible({ timeout: 5000 });
 
     // Open → Escape closes (a behaviour added during consolidation).

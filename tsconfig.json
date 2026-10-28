@@ -9,7 +9,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "esModuleInterop": true,
-    "types": ["vite/client", "node"]
+    "types": ["vite/client"]
   },
-  "include": ["script.ts", "src/**/*.ts", "tests/**/*.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": ["script.ts", "src/**/*.ts"]
 }

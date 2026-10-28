@@ -51,10 +51,10 @@ export async function createGeoJsonPointLayer<P>(
  * Adds a clustered GeoJSON point layer to the map.
  * This function fetches GeoJSON data and adds the points to a MarkerClusterGroup.
  *
- * @param {string} filePath - The path to the GeoJSON file.
- * @param {Function} onEachFeatureCallback - Callback for each feature.
- * @param {Function} pointToLayerCallback - Callback to create a layer for each point.
- * @returns {Promise<L.MarkerClusterGroup>} - A promise that resolves with the marker cluster group.
+ * @param filePath - The path to the GeoJSON file.
+ * @param onEachFeatureCallback - Callback for each feature.
+ * @param pointToLayerCallback - Callback to create a layer for each point.
+ * @returns The marker cluster group.
  */
 export async function addClusteredGeoJsonPointLayer<P>(
     filePath: string,
@@ -128,9 +128,9 @@ export async function addClusteredGeoJsonPointLayer<P>(
  * Creates a GeoJSON line layer using the provided file path and style,
  * but does not add it to the map.
  *
- * @param {string} filePath - URL/path to the GeoJSON file.
- * @param {object} style - Styling options for the layer.
- * @returns {Promise<Layer>} - A promise resolving to the created GeoJSON layer.
+ * @param filePath - URL/path to the GeoJSON file.
+ * @param style - Styling options for the layer.
+ * @returns The created GeoJSON layer, not yet added to the map.
  */
 export async function createGeoJsonLineLayer(filePath: string, style: L.PolylineOptions) {
     // Fetch the GeoJSON data (fetchGeoJson handles HTTP and JSON-parse errors).

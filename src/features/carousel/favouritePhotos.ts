@@ -19,7 +19,7 @@ const PHOTOS_FILE = 'assets/points/photos.geojson';
  * properties and null geometry, so it fails these checks and drops out here
  * without needing a special case.
  *
- * @param {Object} feature - A GeoJSON feature from photos.geojson.
+ * @param feature - A GeoJSON feature from photos.geojson.
  * The type predicate lets Array.filter narrow raw (possibly blank) records to
  * photos whose filename, properties, and geometry the carousel can rely on.
  */
@@ -44,8 +44,7 @@ export function isFavouritePhoto(feature: PhotoFeature): feature is FavouritePho
  * The carousel reshuffles on every page load so a repeat visitor meets a
  * different photo first.
  *
- * @param {Array} items
- * @returns {Array} A shuffled copy; the input is left untouched.
+ * @returns A shuffled copy; the input is left untouched.
  */
 export function shuffle<T>(items: readonly T[]): T[] {
     const shuffled = [...items];
@@ -66,7 +65,7 @@ export function shuffle<T>(items: readonly T[]): T[] {
  * re-parsing it costs about a millisecond. That buys us a module with no
  * plumbing to thread through script.ts.
  *
- * @returns {Promise<Array>} Shuffled favourite features.
+ * @returns Shuffled favourite features.
  */
 export async function loadFavouritePhotos() {
     const geojson = await fetchGeoJson<Photos>(PHOTOS_FILE);

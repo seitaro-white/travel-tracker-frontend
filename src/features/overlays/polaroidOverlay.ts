@@ -44,7 +44,7 @@ function ensureStampFilter() {
  * This creates a DOM element overlay containing the image and caption,
  * then triggers the CSS transition to animate it in.
  *
- * @param {Object} feature - A GeoJSON feature that must include properties for filename and (optionally) description.
+ * @param feature - A GeoJSON feature that must include properties for filename and (optionally) description.
  */
 export function showAnimatedPolaroid(feature: Feature<Point, PhotoProperties>) {
     // Ensure the SVG filter for stamp texture is in the DOM.

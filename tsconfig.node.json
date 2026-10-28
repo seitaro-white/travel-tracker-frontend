@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "tests/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "src/types/browser.d.ts"
+  ]
+}

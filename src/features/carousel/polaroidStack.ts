@@ -123,8 +123,8 @@ function entryTransform(progress: number) {
 /**
  * Loads the favourites, builds the pile, and slides it onto the page.
  *
- * @param {L.Map} map - The Leaflet map to fly when a photo is selected.
- * @returns {Promise<HTMLElement>} The mounted stack container.
+ * @param map - The Leaflet map to fly when a photo is selected.
+ * @returns The mounted stack container, or null when there are no favourites.
  */
 export async function showPolaroidStack(map: L.Map) {
     const favourites = await loadFavouritePhotos();
@@ -544,11 +544,12 @@ export async function showPolaroidStack(map: L.Map) {
             return;
         }
 
-        // Map the drag onto the incoming card's journey, clamped so pulling past
-        // home doesn't overshoot and reversing past the start doesn't invert it.
-        const travel = drag.card.offsetWidth * ENTRY_TRAVEL_RATIO;
-        // Back mode always lifts its incoming card before reaching here.
-        scrubIncoming(drag.incoming!, Math.min(Math.max(drag.dx / travel, 0), 1));
+        if (drag.mode === 'back' && drag.incoming) {
+            // Map the drag onto the incoming card's journey, clamped so pulling past
+            // home doesn't overshoot and reversing past the start doesn't invert it.
+            const travel = drag.card.offsetWidth * ENTRY_TRAVEL_RATIO;
+            scrubIncoming(drag.incoming, Math.min(Math.max(drag.dx / travel, 0), 1));
+        }
     });
 
     function endDrag() {
@@ -564,12 +565,11 @@ export async function showPolaroidStack(map: L.Map) {
         suppressClick = true;
         const committed = Math.abs(dx) >= card.offsetWidth * DRAG_COMMIT_RATIO;
 
-        if (mode === 'back') {
-            // Back mode always has an incoming card (lifted on its first move).
-            incoming!.classList.remove('is-dragging');
+        if (mode === 'back' && incoming) {
+            incoming.classList.remove('is-dragging');
             // Either way the card keeps moving the way the finger was going:
             // onward to the top, or back out to where it came from.
-            if (committed) commitPrevious(incoming!); else cancelPrevious(incoming!);
+            if (committed) commitPrevious(incoming); else cancelPrevious(incoming);
             return;
         }
 

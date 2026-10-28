@@ -9,8 +9,8 @@ import { placeEmojis } from './placeEmojis';
  * A callback function for Leaflet's onEachFeature option.
  * It binds a tooltip to each place marker to show its title on hover.
  *
- * @param {Object} feature - The GeoJSON feature.
- * @param {L.Layer} layer - The Leaflet layer for the feature.
+ * @param feature - The GeoJSON feature.
+ * @param layer - The Leaflet layer for the feature.
  */
 export function onEachPlaceFeature(feature: Feature<Point, PlaceProperties>, layer: L.Layer) {
     // Check if the feature has a 'Title' property.
@@ -32,9 +32,9 @@ export function onEachPlaceFeature(feature: Feature<Point, PlaceProperties>, lay
  * A callback function for Leaflet's pointToLayer option.
  * It creates a custom emoji marker for each place feature.
  *
- * @param {Object} feature - The GeoJSON feature for the place.
- * @param {L.LatLng} latlng - The marker's location.
- * @returns {L.Marker} - The Leaflet marker.
+ * @param feature - The GeoJSON feature for the place.
+ * @param latlng - The marker's location.
+ * @returns The Leaflet marker.
  */
 export function pointToLayerForPlaces(feature: Feature<Point, PlaceProperties>, latlng: L.LatLng) {
     // Get the place list category from the feature's properties.
