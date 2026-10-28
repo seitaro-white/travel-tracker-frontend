@@ -73,5 +73,4 @@ export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; o
         front.setAttribute('aria-hidden', 'false');
         setTimeout(() => { flipping = false; }, FLIP_MS);
     });
-    card.focus();
 }
