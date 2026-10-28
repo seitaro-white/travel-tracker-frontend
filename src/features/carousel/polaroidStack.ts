@@ -68,8 +68,8 @@ const MOBILE_BREAKPOINT_PX = 700;
 // How far down the sheet must be dragged to dismiss it, as a fraction of its
 // own height. Same idea as DRAG_COMMIT_RATIO, on the other axis.
 const SHEET_DISMISS_RATIO = 0.25;
-// Every full-screen overlay openOverlay can put up (the polaroid blow-up, and
-// the info/intro panels). Kept as one selector because the pile treats them
+// Every full-screen overlay openOverlay can put up (the polaroid blow-up,
+// info panel, and intro card). Kept as one selector because the pile treats them
 // alike: while any of them is on screen, a tap elsewhere belongs to it.
 const OVERLAY_WRAPPERS = '.polaroid-animated-wrapper-overlay, .overlay-panel-overlay, .intro-card-overlay';
 

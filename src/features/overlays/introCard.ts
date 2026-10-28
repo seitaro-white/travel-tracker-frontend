@@ -31,12 +31,7 @@ export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; o
         </span>
     `;
 
-    const back = card.querySelector<HTMLElement>('.intro-card-back')!;
-    const front = card.querySelector<HTMLElement>('.intro-card-front')!;
     const photo = card.querySelector<HTMLImageElement>('.intro-card-photo')!;
-    // Hide the reverse side from screen readers as well as visually in CSS.
-    back.setAttribute('aria-hidden', String(faceUp));
-    front.setAttribute('aria-hidden', String(!faceUp));
 
     const { close } = openOverlay({
         wrapperClass: 'intro-card-overlay',
@@ -69,8 +64,8 @@ export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; o
         flipping = true;
         card.classList.add('is-flipped');
         card.setAttribute('aria-label', 'Start exploring');
-        back.setAttribute('aria-hidden', 'true');
-        front.setAttribute('aria-hidden', 'false');
         setTimeout(() => { flipping = false; }, FLIP_MS);
     });
+    // Keep keyboard input on the modal without drawing an outline on arrival.
+    card.focus({ focusVisible: false });
 }
