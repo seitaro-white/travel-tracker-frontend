@@ -10,7 +10,7 @@ export const placeEmojis = {
     "ラーメン": "🍜",            // Admin
     "Admin": "📑",            // Admin
     "店": "🛍️",            // Admin
-    "ピザ": "🍕",            // Admin
+    "ピザ": "🍕",            // Pizza: decomposed Unicode, matching placeList in places.geojson.
     "温泉": "♨️",            // Admin
     "トンアシア": "🥗",            // Admin
     "公園": "⛲️",            // Admin
