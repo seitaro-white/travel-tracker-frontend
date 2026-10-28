@@ -1,6 +1,39 @@
 import { test, expect } from './fixtures';
 import { dismissIntro, SETUP_TIMEOUT, stubFavouritePhotos, stubIntroAnimations } from './mapTestHarness';
 
+test.describe('landscape welcome print', () => {
+    test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+
+    test('the welcome text and dismissal prompt can be scrolled into view on first visit and reopen', async ({ page }) => {
+        await stubIntroAnimations(page);
+        await stubFavouritePhotos(page);
+        await page.goto('/');
+        await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
+        await expect(page.locator('.intro-card-hi')).toBeInViewport({ ratio: 1 });
+        await page.locator('.intro-card').tap();
+        await page.waitForTimeout(750);
+
+        for (const reopened of [false, true]) {
+            if (reopened) {
+                await page.getByRole('button', { name: 'About this map' }).tap();
+                await expect(page.locator('.intro-card-overlay.visible')).toBeVisible();
+                await expect(page.locator('.intro-card')).toHaveClass(/is-flipped/);
+            }
+            const prompt = page.locator('.intro-card-prompt');
+            // Scroll the overlay itself, as a visitor would. Checking the whole
+            // rotated prompt matters: toBeVisible alone allows off-screen text.
+            await page.locator('.intro-card-overlay').evaluate(overlay => {
+                overlay.scrollTop = overlay.scrollHeight;
+            });
+            await expect(page.locator('.intro-card-text')).toBeInViewport({ ratio: 1 });
+            await expect(prompt).toBeInViewport({ ratio: 1 });
+            await prompt.tap();
+            await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
+            await expect(page.locator('.polaroid-stack')).toHaveCount(1);
+        }
+    });
+});
+
 for (const phone of [false, true]) {
     test.describe(phone ? 'phone welcome print' : 'desktop welcome print', () => {
         // Set the idiom before first paint, including touch capability so the
