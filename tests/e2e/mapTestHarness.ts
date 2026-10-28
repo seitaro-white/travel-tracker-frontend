@@ -130,6 +130,18 @@ export async function stubFavouritePhotos(page: Page, count = 8) {
     );
 }
 
+/** Flip and then toss the first-visit print, waiting for each gesture to finish. */
+export async function dismissIntro(page: Page) {
+    const card = page.locator('.intro-card');
+    await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
+    await card.click();
+    await expect(card).toHaveClass(/is-flipped/);
+    // The production input lock deliberately drops taps during the 700ms flip.
+    await page.waitForTimeout(750);
+    await card.click();
+    await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
+}
+
 /**
  * Everything a carousel test needs to reach its starting line: stubs applied,
  * page loaded, intro dismissed, pile mounted. Shared by the carousel specs so
@@ -147,13 +159,10 @@ export async function openAppAndDismissIntro(page: Page) {
     await stubFavouritePhotos(page);
     await page.goto('/');
 
-    // The intro overlay appearing is the signal that setupMap() is done.
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
-    await page.locator('.overlay-panel-close').click();
+    await dismissIntro(page);
 
-    // Dismissing the intro is what mounts the pile (via showOverlayPanel's onClose).
+    // The first-visit card's onClose mounts the pile only after the toss finishes.
     await expect(page.locator('.polaroid-stack')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.overlay-panel-overlay')).toHaveCount(0);
 }
 
 /**

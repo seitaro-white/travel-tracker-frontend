@@ -11,7 +11,7 @@ import { animateChainedGeoJson } from './src/features/animations/animateChainedF
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer';
 import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/infoViewer';
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
-import { showOverlayPanel } from './src/features/overlays/overlayPanel';
+import { showIntroCard } from './src/features/overlays/introCard';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
 
 // The static (non-animated) line layers, declared as data so they can be
@@ -154,7 +154,7 @@ async function fetchHtmlFile(filePath: string) {
     return await response.text();
 }
 
-// Builds the always-visible legend (a hover icon + the mini map key) and adds
+// Builds the always-visible legend (hover or tap to open the mini map key) and adds
 // it to the page. The key markup lives in miniMapKey.html.
 async function setupLegend() {
     // Create a container for the legend icon and the map key.
@@ -163,9 +163,12 @@ async function setupLegend() {
     legendContainer.id = 'legend-container';
     legendContainer.className = 'legend-container';
 
-    // Create the legend icon that the user will hover over (a Font Awesome icon).
-    const legendIcon = document.createElement('i');
-    legendIcon.className = 'fa fa-map-o legend-icon';
+    const legendIcon = document.createElement('button');
+    legendIcon.type = 'button';
+    legendIcon.className = 'legend-icon';
+    legendIcon.setAttribute('aria-label', 'Map key');
+    legendIcon.innerHTML = '<i class="fa fa-map-o" aria-hidden="true"></i>';
+    legendIcon.addEventListener('click', () => legendContainer.classList.toggle('is-open'));
     legendContainer.appendChild(legendIcon);
 
     // Fetch the mini map key HTML and insert it right after the icon.
@@ -174,6 +177,18 @@ async function setupLegend() {
 
     // Add the complete legend container (with icon and hidden key) to the page.
     document.body.appendChild(legendContainer);
+}
+
+// This is separate from the legend container so hovering over About never
+// opens the key. It is created only after the first card has been dismissed.
+function addAboutButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'about-button';
+    button.setAttribute('aria-label', 'About this map');
+    button.innerHTML = '<i class="fa fa-camera-retro" aria-hidden="true"></i>';
+    button.addEventListener('click', () => showIntroCard({ faceUp: true }));
+    document.body.appendChild(button);
 }
 
 // Loads each static line layer in parallel, but does NOT add them to the map.
@@ -256,14 +271,13 @@ async function setupMap() {
     await delay(2000);
     document.body.classList.remove('markers-dropping');
 
-    // 6. Finally, once the lines and markers are in place, show the intro overlay.
-    // We fetch the HTML from the new file and pass it to showOverlayPanel.
-    const introHtml = await fetchHtmlFile('introOverlay.html');
-
-    // 7. The pile of favourite photos is the closing beat of the intro: it
-    //    slides in from the left once the reader dismisses the overlay, and
-    //    then stays for the rest of the session.
-    showOverlayPanel(introHtml, () => showPolaroidStack(map));
+    // 6. The welcome print is the final beat. Only its first dismissal mounts
+    //    the pile and About button; reopening later has no onClose callback,
+    //    so it cannot mount a second pile.
+    showIntroCard({ onClose: () => {
+        showPolaroidStack(map);
+        addAboutButton();
+    } });
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.

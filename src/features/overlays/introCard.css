@@ -1,0 +1,129 @@
+.intro-card-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.intro-card-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.intro-card {
+    width: min(340px, 82vw);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #555;
+    font-family: 'Caveat', cursive;
+    font-size: 23px;
+    cursor: pointer;
+    perspective: 1200px;
+    transform: translateY(-24px) rotate(-4deg);
+    transition: transform 0.5s ease-out;
+}
+
+.intro-card-overlay.visible .intro-card {
+    transform: translateY(0) rotate(-4deg);
+}
+
+.intro-card:focus-visible {
+    outline: 2px solid #555;
+    outline-offset: 8px;
+}
+
+.intro-card-inner {
+    display: grid;
+    transform-style: preserve-3d;
+    transition: transform 0.7s ease-in-out;
+}
+
+.intro-card.is-flipped .intro-card-inner {
+    transform: rotateY(180deg);
+}
+
+/* Both faces occupy the same grid cell. The front sets the print's height,
+   including its handwritten chin, so the back has exactly the same dimensions. */
+.intro-card-face {
+    grid-area: 1 / 1;
+    backface-visibility: hidden;
+    border: 1px solid #e0e0e0;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.intro-card-back {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: #f4f0e6;
+}
+
+.intro-card-hi {
+    font-size: 72px;
+    line-height: 1;
+}
+
+.intro-card-note {
+    font-size: 24px;
+    color: #777;
+}
+
+.intro-card-front {
+    display: block;
+    padding: 14px;
+    background: #fff;
+    transform: rotateY(180deg);
+}
+
+.intro-card-photo {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.intro-card-chin {
+    display: block;
+    padding: 16px 5px 5px;
+    line-height: 1.15;
+}
+
+.intro-card-text,
+.intro-card-prompt {
+    display: block;
+}
+
+.intro-card-prompt {
+    margin-top: 12px;
+    color: #777;
+    font-size: 21px;
+}
+
+/* Only the opening beat of each four-second cycle rocks. Excluding tossed
+   cards matters: an animation would otherwise override the toss transform. */
+.intro-card-overlay.visible .intro-card:not(.is-flipped):not(.is-tossed) {
+    animation: intro-wobble 4s ease-in-out 0.5s infinite;
+}
+
+@keyframes intro-wobble {
+    0%, 15%, 100% { transform: rotate(-4deg); }
+    4%, 11% { transform: rotate(-7deg); }
+    8% { transform: rotate(-1deg); }
+}
+
+/* Keep this after the arrival rule, and independent of .visible: closing
+   removes .visible at the same moment the print starts flying down-left. */
+.intro-card-overlay .intro-card.is-tossed {
+    transform: translate(-70vw, 70vh) rotate(-30deg);
+    transition: transform 0.5s ease-in;
+    pointer-events: none;
+}

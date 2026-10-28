@@ -20,6 +20,7 @@
 import { test, expect, type Page } from './fixtures';
 import {
     captureLeafletMap,
+    dismissIntro,
     openAppAndDismissIntro,
     stubIntroAnimations,
     stubFavouritePhotos,
@@ -51,12 +52,12 @@ test('the pile slides in once the intro is dismissed', async ({ page }) => {
     await stubFavouritePhotos(page);
     await page.goto('/');
 
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
+    await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
     // The pile must NOT be there yet — it is the intro's closing beat, not part
     // of the map's initial furniture.
     await expect(page.locator('.polaroid-stack')).toHaveCount(0);
 
-    await page.locator('.overlay-panel-close').click();
+    await dismissIntro(page);
 
     await expect(page.locator('.polaroid-stack')).toBeVisible({ timeout: 5000 });
     // Four cards: the top one plus three peeking edges.
@@ -82,9 +83,7 @@ test('no pile is built when no photos are flagged as favourites', async ({ page 
     );
     await page.goto('/');
 
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
-    await page.locator('.overlay-panel-close').click();
-    await expect(page.locator('.overlay-panel-overlay')).toBeHidden();
+    await dismissIntro(page);
 
     await expect(page.locator('.polaroid-stack')).toHaveCount(0);
     expect(jsErrors, `Unexpected JS errors: ${jsErrors.join('; ')}`).toHaveLength(0);

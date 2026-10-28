@@ -71,7 +71,7 @@ const SHEET_DISMISS_RATIO = 0.25;
 // Every full-screen overlay openOverlay can put up (the polaroid blow-up, and
 // the info/intro panels). Kept as one selector because the pile treats them
 // alike: while any of them is on screen, a tap elsewhere belongs to it.
-const OVERLAY_WRAPPERS = '.polaroid-animated-wrapper-overlay, .overlay-panel-overlay';
+const OVERLAY_WRAPPERS = '.polaroid-animated-wrapper-overlay, .overlay-panel-overlay, .intro-card-overlay';
 
 /** Builds one mini polaroid. A <button> so it is focusable and clickable for free. */
 function buildCard() {

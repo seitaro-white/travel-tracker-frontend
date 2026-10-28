@@ -15,7 +15,7 @@
  */
 
 import { test, expect } from './fixtures';
-import { captureLeafletMap, stubIntroAnimations, SETUP_TIMEOUT } from './mapTestHarness';
+import { captureLeafletMap, dismissIntro, stubIntroAnimations } from './mapTestHarness';
 
 test('place markers appear after animation, when zoomed in', async ({ page }) => {
     // Intercept the shared window.L assignment before navigation so the test
@@ -33,15 +33,9 @@ test('place markers appear after animation, when zoomed in', async ({ page }) =>
     // Map container renders.
     await expect(page.locator('.leaflet-container')).toBeVisible();
 
-    // Wait for the intro overlay — it appears in setupMap() immediately after
-    // the animation chain and after place/info layers have been added.
-    // This is our "setup is fully done" signal.
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
-
-    // Dismiss the intro overlay — it covers the whole screen (including the
-    // zoom controls), so we must close it before we can interact with the map.
-    await page.locator('.overlay-panel-close').click();
-    await expect(page.locator('.overlay-panel-overlay')).toBeHidden();
+    // The intro is the "setup done" signal and covers the zoom controls.
+    // Flip and toss it before interacting with the map.
+    await dismissIntro(page);
 
     // Zoom to level 12 via the captured Leaflet map instance.
     // animate: false makes zoomend fire synchronously, so the marker layer

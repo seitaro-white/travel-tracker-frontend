@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 const publicRoot = new URL('../public/', import.meta.url);
 
 describe('fetched HTML fragments', () => {
-    it.each(['introOverlay.html', 'miniMapKey.html'])('%s references images that ship with the site', filename => {
+    it.each(['miniMapKey.html'])('%s references images that ship with the site', filename => {
         const html = readFileSync(new URL(filename, publicRoot), 'utf8');
         // These fragments are fetched as text, not processed as Vite entries.
         // Their image URLs therefore need to name real files in public/.
