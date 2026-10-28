@@ -8,9 +8,9 @@ This is a travel visualization application displaying an interactive map of a Ja
 
 ## Development
 
-**Running locally:** Serve the project directory with using http-server -p 8000 (we have http-server installed locally).
+**Running locally:** Run `npm install` once, then `npm run dev`. The project-local `http-server` serves on `0.0.0.0:5173`: open `http://localhost:5173` from the Docker host, or `http://pi-box:5173` from Browserless.
 
-**App code has no build step** - JS/CSS files are served directly. However there is a `package.json` for the test runner (dev-only). Run `npm install` once after cloning.
+**App code has no build step** - JS/CSS files are served directly. `package.json` contains only development tools (server and test runners).
 
 ## Testing
 
@@ -19,10 +19,11 @@ This is a travel visualization application displaying an interactive map of a Ja
 | Command | What it runs | Speed |
 |---------|-------------|-------|
 | `npm test` | Vitest unit + schema + emoji tests | ~0.5s |
-| `npm run test:e2e` | Playwright E2E (smoke + full integration) | ~4s |
+| `npm run test:e2e` | All Playwright E2E specs via Browserless (one worker) | ~1–2 min |
 | `npx playwright test smoke` | Smoke test only (map loads, no JS errors) | ~1s |
 | `npx playwright test full-integration` | Full integration with place markers | ~2s |
-| `npx playwright test --ui` | Playwright interactive UI (good for debugging) | — |
+
+E2E requires the pi-box browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install`: Chromium runs in the Browserless sidecar. The config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to five minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
 
 ### Test layout
 
@@ -63,14 +64,39 @@ tests/
 ### Known data bug (tracked in todo.MD)
 `assets/points/photos.geojson` feature index 748 is a blank record (`geometry: null`, all properties null). The schema test logs it but doesn't fail on it.
 
-## Testing with MCP Browser
+## Ad hoc browser testing with Browserless
 
-**IMPORTANT:** The MCP Playwright browser maintains a persistent session and caches JavaScript files between tool calls. After making code changes:
+Start `npm run dev` in another terminal. Run this from the project root; `playwright-core` is already installed with `@playwright/test`. CDP connects to the sidecar without a local browser download. A new context on each run avoids carrying cached JavaScript or storage between checks.
 
-1. **Close and reopen the browser** using `browser_close` then navigate again for a completely fresh session
-2. **Or use hard refresh** by pressing `Cmd+Shift+R` in the browser to force reload cached files
+```sh
+node --input-type=module <<'JS'
+import { chromium } from 'playwright-core';
 
-Note: The human developer doesn't experience this caching issue in their browser - this only affects Claude's MCP browser session.
+const url = new URL(process.env.BROWSER_CDP_URL);
+url.searchParams.set('token', process.env.BROWSER_TOKEN);
+url.searchParams.set('timeout', '120000'); // Session lifetime in milliseconds.
+try {
+  const browser = await chromium.connectOverCDP(url.href, { timeout: 10000 });
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    // localhost here would mean the browser sidecar, not the app container.
+    await page.goto('http://pi-box:5173', { timeout: 15000 });
+    await page.locator('.leaflet-tile').first().waitFor({ timeout: 15000 });
+    await page.screenshot({ path: '/tmp/travel-tracker.png', fullPage: true });
+    await context.close();
+  } finally {
+    await browser.close(); // Release the sidecar session even if navigation fails.
+  }
+} catch {
+  // Raw connection errors may contain the authenticated URL; never log them.
+  console.error('Browser check failed; check app and sidecar availability.');
+  process.exitCode = 1;
+}
+JS
+```
+
+The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the sidecar; open it with the agent's image/file reader to inspect the result. Never print authenticated URLs or commit `BROWSER_TOKEN`. If the environment variables are absent, enable the browser overlay on the Docker host. For longer interactions, increase the session's `timeout` query parameter; disconnecting disposes the session.
 
 ## Architecture
 

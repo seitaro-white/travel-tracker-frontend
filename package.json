@@ -5,6 +5,7 @@
   "main": "script.js",
   "type": "module",
   "scripts": {
+    "dev": "http-server . -a 0.0.0.0 -p 5173",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
@@ -22,6 +23,7 @@
   "homepage": "https://github.com/seitaro-white/travel-tracker-frontend#readme",
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "http-server": "^14.1.1",
     "vitest": "^4.1.8"
   }
 }

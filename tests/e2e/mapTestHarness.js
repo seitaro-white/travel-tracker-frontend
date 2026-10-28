@@ -148,7 +148,7 @@ export async function openAppAndDismissIntro(page) {
     await captureLeafletMap(page);
     await stubIntroAnimations(page);
     await stubFavouritePhotos(page);
-    await page.goto('http://localhost:8000');
+    await page.goto('/');
 
     // The intro overlay appearing is the signal that setupMap() is done.
     await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: SETUP_TIMEOUT });
