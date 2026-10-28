@@ -47,7 +47,7 @@ test.beforeEach(async ({ page }) => {
     await stubFavouritePhotos(page, 8);
     await page.goto('/');
     // The intro overlay is every spec's "setup finished" signal.
-    await page.waitForSelector('.overlay-panel-close', { timeout: SETUP_TIMEOUT });
+    await page.waitForSelector('.intro-card', { timeout: SETUP_TIMEOUT });
     await page.evaluate((c) => window.__leafletMap!.setView(c, 12, { animate: false }), TOKYO);
 });
 

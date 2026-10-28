@@ -18,7 +18,7 @@
 
 import { test, expect } from './fixtures';
 
-import { captureLeafletMap } from './mapTestHarness';
+import { captureLeafletMap, dismissIntro } from './mapTestHarness';
 
 const TINY_LINE = {
     type: 'FeatureCollection',
@@ -46,11 +46,8 @@ test('info overlay opens on marker click and closes via Escape and backdrop', as
 
     await page.goto('/');
 
-    // Intro overlay is the "setup done" signal; dismiss it via Continue. Generous
-    // timeout: setup loads real data under worker contention.
-    await expect(page.locator('.overlay-panel-overlay')).toBeVisible({ timeout: 30000 });
-    await page.locator('.overlay-panel-close').click();
-    await expect(page.locator('.overlay-panel-overlay')).toBeHidden();
+    // The intro is the "setup done" signal; flip and toss it first.
+    await dismissIntro(page);
 
     // Zoom in so the info layer (zoom ≥ 10) is added to the map.
     await page.evaluate(() => window.__leafletMap!.setZoom(12, { animate: false }));

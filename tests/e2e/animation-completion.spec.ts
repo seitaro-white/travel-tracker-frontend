@@ -19,5 +19,5 @@ test('the intro completes when motion ends synchronously', async ({ page }) => {
         }),
     }));
     await page.goto('/');
-    await expect(page.locator('.overlay-panel-close')).toBeVisible({ timeout: SETUP_TIMEOUT });
+    await expect(page.locator('.intro-card')).toBeVisible({ timeout: SETUP_TIMEOUT });
 });

@@ -15,7 +15,7 @@ Use Node 24 and run `npm ci` after cloning.
 - `npm run build` — emit the deployable site into gitignored `dist/`.
 - `npm run preview -- --port 5174 --strictPort` — serve the production build for verification. Browserless reaches it at `http://pi-box:5174`.
 
-`vite.config.ts` uses `base: './'`: bundle URLs stay relative under the GitHub Pages project path `/travel-tracker-frontend/`. Runtime fetch/image URLs are also relative (`assets/...`, `introOverlay.html`, `miniMapKey.html`). `public/` is copied unchanged into the build; do not prefix those URLs with `/` or `public/`.
+`vite.config.ts` uses `base: './'`: bundle URLs stay relative under the GitHub Pages project path `/travel-tracker-frontend/`. Runtime fetch/image URLs are also relative (`assets/...`, `miniMapKey.html`). `public/` is copied unchanged into the build; do not prefix those URLs with `/` or `public/`.
 
 Optional root `config.js` remains gitignored. Vite serves/emits an empty default if it is absent; copy `config.example.js` to `config.js` for deliberate local configuration. Restart preview/rebuild after changing it. The Pages workflow runs install, typecheck, unit tests, and build, then overwrites `dist/config.js` with production settings and uploads only `dist/`.
 
@@ -49,6 +49,7 @@ tests/
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
     full-integration.spec.ts  # place markers visible after animation + zoom
     overlay-interactions.spec.ts # openOverlay dismissal paths (Escape, backdrop)
+    intro-card.spec.ts        # modal flip/toss, reopening, keyboard, touch legend
     carousel.spec.ts          # desktop drawer: mount, cycle, fly-to, collapse
     carousel-sheet.spec.ts    # phone: resting pile + bottom sheet (viewport set via test.use)
     roughLines.spec.ts        # hand-drawn renderer: bezier output + stable seed
@@ -56,7 +57,7 @@ tests/
 
 **E2E specs import `test` and `expect` from `fixtures.ts`**, which serves a small synthetic tile for both OpenStreetMap and Thunderforest. This keeps automated pan/zoom tests off community servers and avoids using production quota. It does not affect the local dev map. The smoke test checks Leaflet's tile-loading lifecycle against this fixture, not the external provider's availability.
 
-**E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
+**E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, `dismissIntro()` (flip → wait → toss → removed), and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
 
 **Viewport is what selects the carousel idiom.** `carousel.spec.ts` runs at the default viewport and therefore tests the desktop drawer; `carousel-sheet.spec.ts` sets a phone viewport with `test.use()` so the page is laid out below the 700px breakpoint from the first paint. Use `test.use()` rather than `setViewportSize()` — resizing after load exercises a transition between idioms that no real user sees.
 
@@ -118,7 +119,7 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 - `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker). Attach `Ended` before `addTo(map)`: auto-start can finish a zero/tiny-distance route synchronously.
 - `src/features/geojson/` - GeoJSON fetching and Leaflet layer creation, including `flightArcs.ts` (synthesises curved flight lines from 2-point GeoJSON)
 - `src/features/markers/` - Photo, place, and info marker callbacks (onEachFeature/pointToLayer pattern)
-- `src/features/overlays/` - Overlay panel system including polaroid photo display
+- `src/features/overlays/` - Shared overlay lifecycle, polaroid photo display, and the welcome print (`introCard.ts` + `introCard.css`)
 - `src/features/carousel/` - The favourite-photo carousel: a pile of mini polaroids (`polaroidStack.ts`) fed by `favouritePhotos.ts`
 - `src/utils/` - Generic, feature-agnostic map helpers (e.g. `layerVisibility.ts`)
 
@@ -135,9 +136,11 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 **Build output:** `dist/` is now exclusively disposable Vite output. Vendored motion code lives in `src/vendor/`, so building cannot erase it.
 
-**Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/introOverlay.html` and `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
+**Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
 
-**Favourite photo carousel:** a pile of four askew mini polaroids, mounted as the closing beat of the intro via `showOverlayPanel`'s `onClose`. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
+**Intro card:** `showIntroCard` presents a cream, handwritten back that gently wobbles. Clicking or pressing Enter/Space flips it to a fixed placeholder photo (`INTRO_PHOTO` in `introCard.ts`) and welcome text; a second activation tosses it down-left. Input is ignored during the 700ms flip. The first visit ignores Escape/backdrop; its `onClose` mounts the pile and the separate About button below the top-right legend. About reopens it photo-up, with card/backdrop/Escape all tossing it away and no second pile. `openOverlay`'s `onClosing` starts the toss; `onClose` runs after the scrim fades and the wrapper is removed. The legend supports both mouse hover and tap-to-toggle (hover CSS is limited to hover-capable devices so touch can close it).
+
+**Favourite photo carousel:** a pile of four askew mini polaroids, mounted as the closing beat of the intro via `showIntroCard`'s `onClose`. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
 
 | | desktop (> 700px) | phone (≤ 700px) |
 |---|---|---|

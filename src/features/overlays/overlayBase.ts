@@ -11,6 +11,7 @@ interface OverlayOptions {
     dismissOnEscape?: boolean;
     gracefulClose?: boolean;
     beforeShow?: () => void | Promise<void>;
+    onClosing?: () => void;
     onClose?: () => void;
 }
 
@@ -27,6 +28,7 @@ type OverlayWrapper = HTMLDivElement & { _overlayCleanup?: () => void };
  * @param [opts.dismissOnEscape=true] - Pressing Escape closes the overlay.
  * @param [opts.gracefulClose=true] - Fade out via CSS before removal (vs. remove immediately).
  * @param [opts.beforeShow] - Optional async step awaited before fading in (e.g. image load).
+ * @param [opts.onClosing] - Called once at the start of closing, before the fade-out.
  * @param [opts.onClose] - Called after the overlay has been removed from the DOM.
  * @returns The mounted backdrop wrapper and its close handle.
  */
@@ -37,6 +39,7 @@ export function openOverlay({
     dismissOnEscape = true,
     gracefulClose = true,
     beforeShow,
+    onClosing,
     onClose,
 }: OverlayOptions) {
     // Remove any existing overlay with the same wrapper class to avoid duplicates,
@@ -65,6 +68,7 @@ export function openOverlay({
         if (closed) return;
         closed = true;
         removeKeydown();
+        onClosing?.();
 
         const finish = () => {
             if (wrapper.parentElement) wrapper.remove();

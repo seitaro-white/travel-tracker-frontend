@@ -140,57 +140,10 @@
   transform: translateY(0);
 }
 
-.overlay-panel-panel h2 {
-  text-align: center;
-  font-size: 2.2em;
-  font-weight: 700;
-  color: #2d3436;
-  margin-top: 0;
-  margin-bottom: 16px;
-  letter-spacing: -0.5px;
-}
-
 .overlay-panel-panel p {
   text-align: center;
   color: #555;
   margin-bottom: 0;
-}
-
-.overlay-panel-close {
-  display: block;
-  margin: 28px auto 0 auto;
-  padding: 12px 36px;
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-  color: #fff;
-  border: none;
-  border-radius: 30px;
-  font-size: 1.05em;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(255,107,53,0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  letter-spacing: 0.3px;
-}
-
-.overlay-panel-close:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255,107,53,0.45);
-}
-
-.overlay-panel-close:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(255,107,53,0.3);
-}
-
-/* This rule makes the map key a two-column layout by default */
-.map-key-columns {
-    display: flex;
-    flex-direction: row; /* Arrange columns side-by-side */
-    gap: 20px; /* This will now be horizontal gap between columns */
-}
-
-.key-item span {
-    font-size: 14px;
 }
 
 /* --- Legend Icon and Container Styles --- */
@@ -206,7 +159,8 @@
 }
 
 /* Style for the legend icon itself. */
-.legend-icon {
+.legend-icon,
+.about-button {
     font-size: 24px;
     padding: 10px;
     background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
@@ -218,10 +172,18 @@
     border: 1px solid rgba(0,0,0,0.06);
 }
 
-.legend-icon:hover {
+.legend-icon:hover,
+.about-button:hover {
     background: linear-gradient(145deg, #f8f9fa 0%, #ffffff 100%);
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     transform: scale(1.05);
+}
+
+.about-button {
+    position: absolute;
+    top: 68px;
+    right: 10px;
+    z-index: 1001;
 }
 
 /* Styles for the new mini map key */
@@ -249,8 +211,17 @@
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s;
 }
 
-/* When hovering over the legend-container, make the mini-map-key visible. */
-.legend-container:hover .mini-map-key {
+/* Real hover devices retain the existing preview. Restricting hover avoids
+   sticky touch :hover keeping the key visible after the second tap closes it. */
+@media (hover: hover) {
+    .legend-container:hover .mini-map-key {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+}
+
+.legend-container.is-open .mini-map-key {
     opacity: 1;
     visibility: visible;
     transform: translateX(0); /* Slide it into its final position */
