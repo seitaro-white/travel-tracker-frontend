@@ -23,13 +23,27 @@ import { loadCarouselPhotos } from './favouritePhotos';
 import { showAnimatedPolaroid } from '../overlays/polaroidOverlay';
 import { landIntroCard } from '../overlays/introLanding';
 
-type Card = HTMLButtonElement & { _feature?: FavouritePhoto };
+interface Lie {
+    x: number;
+    y: number;
+    tilt: number;
+}
+type Card = HTMLButtonElement & { _feature?: FavouritePhoto; _lie: Lie };
+interface Incoming {
+    card: Card;
+    originalLie: Lie;
+    destination: Lie;
+    turnaround: Lie;
+    progress: number;
+    slipping: boolean;
+    onSlipped?: () => void;
+}
 interface CardDrag {
     startX: number;
     dx: number;
     card: Card;
     mode: 'forward' | 'back' | null;
-    incoming: Card | null;
+    incoming: Incoming | null;
 }
 interface SheetDrag {
     startY: number;
@@ -39,27 +53,20 @@ interface SheetDrag {
 
 // The top card plus three peeking edges behind it.
 const CARD_COUNT = 4;
-// Must match the animation duration in carousel.css.
-const CYCLE_MS = 420;
+const SEND_MS = 500;
+const TURNAROUND_RATIO = 0.65;
+const SEND_OUT_RATIO = 0.55;
+const SLIP_OUT_RATIO = 0.4;
+// Opposite tilts keep neighbouring white edges peeking out. A lie belongs to
+// the print, not its depth: revealing a print must never move it.
+const MIN_TILT_DEG = 2;
+const MAX_TILT_DEG = 6;
+const MAX_OFFSET_PX = 12;
+const CYCLE_EASING = 'cubic-bezier(0.18, 0.89, 0.32, 1.02)';
 // How far across the card a drag must travel to commit, as a fraction of its width.
 const DRAG_COMMIT_RATIO = 0.25;
 // Pointer movement under this many pixels counts as a tap rather than a sweep.
 const TAP_SLOP_PX = 8;
-// How far a drag has to travel to pull an incoming card all the way home, as a
-// fraction of card width. Matches the distance the leaving card covers in the
-// polaroid-mini-leave keyframe, so going back retraces going forward.
-const ENTRY_TRAVEL_RATIO = 0.46;
-// Where an incoming card waits before it is pulled in: off to the left, tilted
-// and slightly shrunk. Must agree with the end of polaroid-mini-leave, since
-// this is the same resting place a flicked card was thrown to.
-const ENTRY_START = { x: -46, y: 10, rotate: -9, scale: 0.9 };
-// Where it lands: the resting look of a depth-0 card (see carousel.css).
-const ENTRY_END = { x: 0, y: 0, rotate: 1.5, scale: 1 };
-// How much of the journey an incoming card spends fading up. Kept short on
-// purpose: a print is an opaque object, so a card still half transparent halfway
-// in reads as a crossfade rather than something being pulled into place. It only
-// fades over the first stretch, where it is mostly off-screen anyway.
-const ENTRY_FADE_RATIO = 0.3;
 // Town/district level: close enough to place the photo, wide enough for context.
 const FLY_ZOOM = 13;
 const FLY_SECONDS = 1.2;
@@ -75,8 +82,9 @@ const SHEET_DISMISS_RATIO = 0.25;
 const OVERLAY_WRAPPERS = '.polaroid-animated-wrapper-overlay, .overlay-panel-overlay, .intro-card-overlay';
 
 /** Builds one mini polaroid. A <button> so it is focusable and clickable for free. */
-function buildCard() {
-    const card = document.createElement('button');
+function buildCard(oppositeTo: number): Card {
+    const card = document.createElement('button') as Card;
+    setLie(card, randomLie(oppositeTo));
     card.type = 'button';
     card.className = 'polaroid-mini';
 
@@ -107,18 +115,34 @@ function buildButton(className: string, glyph: string, label: string) {
     return button;
 }
 
-/**
- * The transform for an incoming card partway through being pulled in, where
- * progress 0 is waiting off to the left and 1 is landed on top of the pile.
- *
- * Interpolated in script rather than by a CSS animation because a drag needs to
- * scrub this back and forth under the finger, which keyframes can't do.
- */
-function entryTransform(progress: number) {
-    const at = (from: number, to: number) => from + (to - from) * progress;
-    return `translate(${at(ENTRY_START.x, ENTRY_END.x)}%, ${at(ENTRY_START.y, ENTRY_END.y)}%)`
-        + ` rotate(${at(ENTRY_START.rotate, ENTRY_END.rotate)}deg)`
-        + ` scale(${at(ENTRY_START.scale, ENTRY_END.scale)})`;
+function randomLie(oppositeTo: number): Lie {
+    const sign = oppositeTo > 0 ? -1 : 1;
+    return {
+        x: (Math.random() * 2 - 1) * MAX_OFFSET_PX,
+        y: (Math.random() * 2 - 1) * MAX_OFFSET_PX,
+        tilt: sign * (MIN_TILT_DEG + Math.random() * (MAX_TILT_DEG - MIN_TILT_DEG)),
+    };
+}
+
+function setLie(card: Card, lie: Lie) {
+    card._lie = lie;
+    card.style.setProperty('--pm-x', `${lie.x}px`);
+    card.style.setProperty('--pm-y', `${lie.y}px`);
+    card.style.setProperty('--pm-tilt', `${lie.tilt}deg`);
+}
+
+function lieTransform(lie: Lie) {
+    return `translate(${lie.x}px, ${lie.y}px) rotate(${lie.tilt}deg)`;
+}
+
+/** A drag can stop or reverse, so its return leg is interpolated per move. */
+function scrubLie(incoming: Incoming): Lie {
+    const at = (from: number, to: number) => from + (to - from) * incoming.progress;
+    return {
+        x: at(incoming.turnaround.x, incoming.destination.x),
+        y: at(incoming.turnaround.y, incoming.destination.y),
+        tilt: at(incoming.turnaround.tilt, incoming.destination.tilt),
+    };
 }
 
 /**
@@ -171,7 +195,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
 
     const byDepth: Card[] = [];
     for (let i = 0; i < CARD_COUNT; i++) {
-        const card = buildCard();
+        const card = buildCard(byDepth.at(-1)?._lie.tilt ?? 0);
         byDepth.push(card);
         cardsElement.appendChild(card);
     }
@@ -205,10 +229,9 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
 
     // Index into `favourites` of the photo currently on top of the pile.
     let topIndex = 0;
-    // True while a cycle is playing, so cycles cannot overlap. Mirrored onto the
-    // container as a class: the individual card classes come and go partway
-    // through a cycle, so they are not a reliable "is the pile busy" signal for
-    // anything outside this module (the E2E spec waits on this).
+    // Busy across both legs, or while a backward drag holds a borrowed print.
+    // This is a signal for geometry/selection, not an input lock: a new browse
+    // finishes the running movement first. E2E tests wait on the same class.
     let animating = false;
     const setAnimating = (value: boolean) => {
         animating = value;
@@ -233,7 +256,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         image.alt = feature.properties.description || 'A favourite photo from the trip';
     }
 
-    /** Writes each card's current pile depth, which is what positions it in CSS. */
+    /** Writes z-order and accessibility only; each print keeps its own lie. */
     function applyDepths() {
         byDepth.forEach((card, depth) => {
             card.dataset.depth = String(depth);
@@ -245,11 +268,10 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     }
 
     /**
-     * Runs `mutate` with the card's transitions and animations switched off, so
-     * it can be moved or repainted without the change being animated. Reading
-     * offsetWidth in between forces the browser to apply the change while
-     * motion is still suppressed. This is how the card that just flew off the
-     * front gets planted at the back of the pile unseen.
+     * Runs `mutate` with CSS transitions switched off. Reading offsetWidth
+     * forces the browser to apply the change before restoring transitions, so
+     * committing a finished lie or preparing the landing target cannot create
+     * a second, unintended animation.
      */
     function withoutMotion(card: Card, mutate: () => void) {
         card.classList.add('is-instant');
@@ -260,117 +282,156 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
 
     // --- Cycling ----------------------------------------------------------
 
-    /** Flicks the top card away and brings the next photo forward. */
-    function goNext() {
-        if (animating) return;
-        setAnimating(true);
+    // Only one leg runs at a time. Two legs let z-order change exactly at the
+    // turnaround, rather than interpolating numeric z-index values mid-flight.
+    let running: { animation: Animation; complete: () => void } | null = null;
 
-        // Rotate the pile: the top card goes to the back.
-        const leaving = byDepth.shift()!; // Four cards always exist, even with fewer favourites.
-        byDepth.push(leaving);
+    function playLeg(card: Card, from: string, to: Lie, zIndex: number, duration: number, done: () => void) {
+        card.classList.add('is-moving');
+        card.style.zIndex = String(zIndex);
+        if (reduceMotion) {
+            card.style.transform = lieTransform(to);
+            done();
+            return;
+        }
+        const animation = card.animate([
+            { transform: from },
+            { transform: lieTransform(to) },
+        ], { duration, easing: CYCLE_EASING, fill: 'forwards' });
+        const complete = () => {
+            // Commit before cancelling the fill so there is no frame at the
+            // old transform between the two legs. is-moving suppresses CSS
+            // transitions; Web Animations alone owns the travelling print.
+            animation.onfinish = null;
+            card.style.transform = lieTransform(to);
+            animation.cancel();
+            running = null;
+            done();
+        };
+        running = { animation, complete };
+        animation.onfinish = complete;
+    }
+
+    function finishMovement() {
+        // Animation.finish() queues its finish event; it does not call it on
+        // this stack. Run our completion explicitly so a rapid click sees the
+        // settled pile immediately. Completion may start the return leg, so
+        // finish that too before accepting the next browse.
+        while (running) {
+            const leg = running;
+            leg.animation.finish();
+            leg.complete();
+        }
+    }
+
+    function turnaround(card: Card): Lie {
+        return {
+            x: card._lie.x - card.offsetWidth * TURNAROUND_RATIO,
+            y: card._lie.y + 12,
+            tilt: card._lie.tilt - 6,
+        };
+    }
+
+    function settleCard(card: Card, lie: Lie) {
+        withoutMotion(card, () => {
+            setLie(card, lie);
+            card.style.removeProperty('transform');
+            card.style.removeProperty('z-index');
+            card.style.removeProperty('--pm-drag');
+            card.classList.remove('is-moving');
+        });
+        setAnimating(false);
+    }
+
+    /** Sends the top print out above the pile, then back in underneath it. */
+    function goNext() {
+        finishMovement();
+        setAnimating(true);
+        const leaving = byDepth[0];
+        // Capture before changing depth so a forward drag continues from the
+        // hand's position, not from the print's original lie.
+        const from = getComputedStyle(leaving).transform;
+        const turn = turnaround(leaving);
+        const destination = randomLie(byDepth[CARD_COUNT - 1]._lie.tilt);
+        byDepth.push(byDepth.shift()!);
         topIndex = (topIndex + 1) % favourites.length;
         applyDepths();
 
         return new Promise<void>(resolve => {
-            const settle = () => {
-                // Plant the card at the back of the pile showing its new photo,
-                // without animating the trip there.
-                withoutMotion(leaving, () => {
-                    leaving.classList.remove('is-leaving');
-                    leaving.style.removeProperty('--pm-drag');
+            playLeg(leaving, from, turn, 5, SEND_MS * SEND_OUT_RATIO, () => {
+                playLeg(leaving, lieTransform(turn), destination, 0, SEND_MS * (1 - SEND_OUT_RATIO), () => {
+                    settleCard(leaving, destination);
+                    // Only its white edges are visible now. Recycle its photo
+                    // at the back, never while it is travelling in plain sight.
                     paint(leaving, featureAt(CARD_COUNT - 1));
+                    resolve();
                 });
-                setAnimating(false);
-                resolve();
-            };
-
-            if (reduceMotion) {
-                settle();
-                return;
-            }
-            // The keyframe starts from --pm-drag, so a flick continues into the
-            // throw instead of snapping back to centre first.
-            leaving.classList.add('is-leaving');
-            setTimeout(settle, CYCLE_MS);
+            });
         });
     }
 
-    /**
-     * Lifts the card at the back of the pile out and parks it off to the left,
-     * showing the previous photo, ready to be pulled in. Returns it.
-     *
-     * Reusing the back card is what keeps going back cheap: the pile's data
-     * model rotates by one, so only this one card needs a new photo. It is 95%
-     * hidden behind three others, so borrowing it costs nothing visually.
-     */
-    function liftIncoming() {
-        const incoming = byDepth[CARD_COUNT - 1];
-        const previous = favourites[(topIndex - 1 + favourites.length) % favourites.length];
-        paint(incoming, previous);
-        // Placed without animating, so it doesn't visibly fly out to its
-        // waiting position before the pull-in even starts.
-        withoutMotion(incoming, () => {
-            incoming.classList.add('is-incoming');
-            incoming.style.transform = entryTransform(0);
-            incoming.style.opacity = '0';
+    /** Borrows the hidden bottom print and visibly slips it out below the pile. */
+    function liftIncoming(): Incoming {
+        const card = byDepth[CARD_COUNT - 1];
+        const incoming: Incoming = {
+            card,
+            originalLie: card._lie,
+            destination: randomLie(byDepth[0]._lie.tilt),
+            turnaround: turnaround(card),
+            progress: 0,
+            slipping: true,
+        };
+        paint(card, favourites[(topIndex - 1 + favourites.length) % favourites.length]);
+        setAnimating(true);
+        playLeg(card, lieTransform(card._lie), incoming.turnaround, 0, SEND_MS * SLIP_OUT_RATIO, () => {
+            incoming.slipping = false;
+            // The hand may have moved (or let go) during the slip-out. Apply
+            // its latest progress only once the print has cleared the pile.
+            card.style.zIndex = '5';
+            scrubIncoming(incoming, incoming.progress);
+            incoming.onSlipped?.();
         });
         return incoming;
     }
 
-    /** Moves a lifted card to `progress` (0 = waiting off-left, 1 = landed). */
-    function scrubIncoming(incoming: Card, progress: number) {
-        incoming.style.transform = entryTransform(progress);
-        incoming.style.opacity = String(Math.min(progress / ENTRY_FADE_RATIO, 1));
+    /** Tracks the arriving print, leaving the touched top print undisturbed. */
+    function scrubIncoming(incoming: Incoming, progress: number) {
+        incoming.progress = progress;
+        if (!incoming.slipping) incoming.card.style.transform = lieTransform(scrubLie(incoming));
     }
 
-    /** Strips the temporary entry styling, leaving the card to its depth rule. */
-    function releaseIncoming(incoming: Card) {
-        incoming.classList.remove('is-incoming');
-        incoming.style.removeProperty('transform');
-        incoming.style.removeProperty('opacity');
+    function commitPrevious(incoming: Incoming) {
+        const travelIn = () => {
+            byDepth.pop();
+            byDepth.unshift(incoming.card);
+            topIndex = (topIndex - 1 + favourites.length) % favourites.length;
+            applyDepths();
+            playLeg(incoming.card, lieTransform(scrubLie(incoming)), incoming.destination, 5,
+                SEND_MS * (1 - SLIP_OUT_RATIO), () => settleCard(incoming.card, incoming.destination));
+        };
+        if (incoming.slipping) incoming.onSlipped = travelIn;
+        else travelIn();
     }
 
-    /**
-     * Completes a step backwards: the lifted card travels the rest of the way in
-     * and becomes the top of the pile. Clearing its inline transform is what
-     * animates it home — the depth-0 rule supplies the destination, so there is
-     * no second copy of the resting transform to keep in sync.
-     */
-    function commitPrevious(incoming: Card) {
-        setAnimating(true);
-
-        byDepth.pop();
-        byDepth.unshift(incoming);
-        topIndex = (topIndex - 1 + favourites.length) % favourites.length;
-        applyDepths();
-
-        // The card that was on top just steps back to depth 1, which its own
-        // transition handles.
-        releaseIncoming(incoming);
-
-        setTimeout(() => setAnimating(false), reduceMotion ? 0 : CYCLE_MS);
+    /** Retraces the pull-in, then slips the borrowed print back underneath. */
+    function cancelPrevious(incoming: Incoming) {
+        const returnToBack = () => {
+            playLeg(incoming.card, lieTransform(scrubLie(incoming)), incoming.turnaround, 5,
+                SEND_MS * (1 - SLIP_OUT_RATIO), () => {
+                    playLeg(incoming.card, lieTransform(incoming.turnaround), incoming.originalLie, 0,
+                        SEND_MS * SLIP_OUT_RATIO, () => {
+                            settleCard(incoming.card, incoming.originalLie);
+                            paint(incoming.card, featureAt(CARD_COUNT - 1));
+                        });
+                });
+        };
+        if (incoming.slipping) incoming.onSlipped = returnToBack;
+        else returnToBack();
     }
 
-    /**
-     * Abandons a step backwards: the lifted card slides out to the left again
-     * and then quietly rejoins the back of the pile with its original photo.
-     */
-    function cancelPrevious(incoming: Card) {
-        setAnimating(true);
-        scrubIncoming(incoming, 0);
-
-        setTimeout(() => {
-            withoutMotion(incoming, () => {
-                releaseIncoming(incoming);
-                paint(incoming, featureAt(CARD_COUNT - 1));
-            });
-            setAnimating(false);
-        }, reduceMotion ? 0 : CYCLE_MS);
-    }
-
-    /** Pulls the previous photo in from the left, on top of the pile. */
+    /** Previous is the send-to-back path in reverse: out below, in above. */
     function goPrevious() {
-        if (animating) return;
+        finishMovement();
         commitPrevious(liftIncoming());
     }
 
@@ -500,12 +561,14 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     // --- Input ------------------------------------------------------------
 
     cardsElement.addEventListener('pointerdown', (event) => {
-        if (animating || container.classList.contains('is-collapsed')) return;
-        // Cards behind the top one are pointer-events: none, so any card that
-        // receives this is the top one — but check, since the padding around
-        // the pile belongs to cardsElement itself.
-        const card = (event.target as Element).closest<Card>('.polaroid-mini');
-        if (!card || card !== byDepth[0]) return;
+        if (container.classList.contains('is-collapsed')) return;
+        // Finish before identifying the top card: completing a previous move
+        // can change which element is on top. Padding and the handle must not
+        // finish a cycle, since those are not the start of a card gesture.
+        const target = (event.target as Element).closest<Card>('.polaroid-mini');
+        if (!target || target !== byDepth[0]) return;
+        finishMovement();
+        const card = byDepth[0];
 
         // `mode` is decided on the first real movement, not here, because which
         // card moves depends on which way the finger goes. `incoming` is only
@@ -525,8 +588,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         if (drag.mode === null) {
             if (Math.abs(drag.dx) < TAP_SLOP_PX) return;
             if (drag.dx < 0) {
-                // Forward: the finger is on the card being thrown away, so that
-                // card is what moves.
+                // Forward: the finger is on the card being sent to the back,
+                // so that card is what moves.
                 drag.mode = 'forward';
                 drag.card.classList.add('is-dragging');
             } else {
@@ -536,7 +599,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
                 // the one you happen to be touching.
                 drag.mode = 'back';
                 drag.incoming = liftIncoming();
-                drag.incoming.classList.add('is-dragging');
+                drag.incoming.card.classList.add('is-dragging');
             }
         }
 
@@ -550,7 +613,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         if (drag.mode === 'back' && drag.incoming) {
             // Map the drag onto the incoming card's journey, clamped so pulling past
             // home doesn't overshoot and reversing past the start doesn't invert it.
-            const travel = drag.card.offsetWidth * ENTRY_TRAVEL_RATIO;
+            const travel = drag.card.offsetWidth * TURNAROUND_RATIO;
             scrubIncoming(drag.incoming, Math.min(Math.max(drag.dx / travel, 0), 1));
         }
     });
@@ -569,7 +632,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         const committed = Math.abs(dx) >= card.offsetWidth * DRAG_COMMIT_RATIO;
 
         if (mode === 'back' && incoming) {
-            incoming.classList.remove('is-dragging');
+            incoming.card.classList.remove('is-dragging');
             // Either way the card keeps moving the way the finger was going:
             // onward to the top, or back out to where it came from.
             if (committed) commitPrevious(incoming); else cancelPrevious(incoming);
@@ -637,7 +700,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     async function receiveIntroCard(card: HTMLButtonElement) {
         // A reopened intro can be dismissed while a previous browse is still
         // finishing. Let that short cycle settle before changing the pile order.
-        if (animating) await new Promise(resolve => setTimeout(resolve, CYCLE_MS));
+        if (animating) await new Promise(resolve => setTimeout(resolve, SEND_MS));
         if (!isPhone.matches) setCollapsed(false);
 
         // Mount/reveal and opening the desktop drawer both move our destination.
@@ -656,9 +719,12 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         byDepth.unshift(receiving);
         receiving.classList.add('is-landing-target');
         byDepth.forEach((print, depth) => { paint(print, featureAt(depth)); });
-        // The borrowed back card must be at its final top-card angle before
-        // measuring; only the other three prints animate their step backwards.
-        withoutMotion(receiving, applyDepths);
+        // The borrowed print needs its new lie before landing is measured.
+        // Changing depth must not disturb the three prints underneath it.
+        withoutMotion(receiving, () => {
+            setLie(receiving, randomLie(byDepth[1]._lie.tilt));
+            applyDepths();
+        });
 
         await landIntroCard(card, receiving);
         receiving.classList.remove('is-landing-target');

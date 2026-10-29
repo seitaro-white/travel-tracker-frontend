@@ -32,13 +32,7 @@ function topCardImage(page: Page) {
     return page.locator('.polaroid-mini[data-depth="0"] img');
 }
 
-/**
- * Waits for a cycle to finish. The pile ignores input while a card is in flight,
- * so a test that clicks ‹ or › twice in quick succession would have its second
- * click silently dropped. The container carries `is-cycling` for exactly as long
- * as it is busy — the per-card classes are removed partway through, so they are
- * not a reliable signal.
- */
+/** Waits for both legs of a send/return, not just its depth change. */
 async function waitForPileToSettle(page: Page) {
     await expect(page.locator('.polaroid-stack.is-cycling')).toHaveCount(0);
 }
@@ -107,6 +101,74 @@ test('the next button cycles to a different photo', async ({ page }) => {
     await expect(page.locator('.polaroid-mini')).toHaveCount(4);
 });
 
+test('revealing the next print does not move it', async ({ page }) => {
+    await openAppAndDismissIntro(page);
+    const next = page.locator('.polaroid-mini[data-depth="1"]');
+    const src = await next.locator('img').getAttribute('src');
+    const before = (await next.boundingBox())!;
+
+    await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+    await waitForPileToSettle(page);
+
+    await expect(topCardImage(page)).toHaveAttribute('src', src!);
+    const after = (await page.locator('.polaroid-mini[data-depth="0"]').boundingBox())!;
+    for (const key of ['x', 'y', 'width', 'height'] as const) {
+        expect(after[key]).toBeCloseTo(before[key], 3);
+    }
+});
+
+test('the sent print stays opaque and changes z-order only at the turnaround', async ({ page }) => {
+    await openAppAndDismissIntro(page);
+    const first = await topCardImage(page).getAttribute('src');
+    await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+    const moving = page.locator('.polaroid-mini.is-moving');
+    expect(await moving.evaluate(card => getComputedStyle(card).zIndex)).toBe('5');
+
+    // Finish only the outbound leg, then freeze the new return leg at its
+    // start. This measures the actual turnaround without a timing-sensitive
+    // sleep, and requires no test-only surface in the application.
+    await moving.evaluate(card => {
+        const outward = card.getAnimations()[0];
+        outward.addEventListener('finish', () => {
+            const inward = card.getAnimations()[0];
+            inward.pause();
+            inward.currentTime = 0;
+        }, { once: true });
+        outward.finish();
+    });
+    await expect.poll(() => moving.evaluate(card => getComputedStyle(card).zIndex)).toBe('0');
+    const turn = await moving.evaluate(card => {
+        const style = getComputedStyle(card);
+        return {
+            opacity: style.opacity,
+            dx: new DOMMatrixReadOnly(style.transform).m41 - parseFloat(style.getPropertyValue('--pm-x')),
+            width: (card as HTMLElement).offsetWidth,
+        };
+    });
+    expect(turn.opacity).toBe('1');
+    expect(turn.dx).toBeCloseTo(-turn.width * 0.65, 2);
+    await expect(moving.locator('img')).toHaveAttribute('src', first!);
+    await moving.evaluate(card => card.getAnimations()[0].finish());
+    await waitForPileToSettle(page);
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
+});
+
+test('two rapid next clicks advance two prints, and rapid previous clicks return them', async ({ page }) => {
+    await openAppAndDismissIntro(page);
+    const first = await topCardImage(page).getAttribute('src');
+    const third = await page.locator('.polaroid-mini[data-depth="2"] img').getAttribute('src');
+
+    // dblclick delivers two clicks inside a single 500ms send. Neither may be
+    // ignored, and finishing the old leg must not leave a stale callback.
+    await page.getByRole('button', { name: 'Next photo', exact: true }).dblclick();
+    await waitForPileToSettle(page);
+    await expect(topCardImage(page)).toHaveAttribute('src', third!);
+    await page.getByRole('button', { name: 'Previous photo', exact: true }).dblclick();
+    await waitForPileToSettle(page);
+    await expect(topCardImage(page)).toHaveAttribute('src', first!);
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
+});
+
 test('previous returns to the photo that was showing before', async ({ page }) => {
     await openAppAndDismissIntro(page);
 
@@ -160,8 +222,43 @@ test('dragging right pulls the previous photo in, dragging left throws the top c
 
     // Still four cards, and no card left stranded mid-flight with inline styles.
     await expect(page.locator('.polaroid-mini')).toHaveCount(4);
-    await expect(page.locator('.polaroid-mini.is-incoming')).toHaveCount(0);
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
     expect(second).not.toBe(first);
+});
+
+test('a new drag finishes the in-flight send before browsing again', async ({ page }) => {
+    await openAppAndDismissIntro(page);
+    const third = await page.locator('.polaroid-mini[data-depth="2"] img').getAttribute('src');
+    await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+    // Do not use hover(): it would wait for stability and miss the very
+    // interruption this test covers. The newly revealed top print is still.
+    const box = (await page.locator('.polaroid-mini[data-depth="0"]').boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x - 100, y, { steps: 4 });
+    await page.mouse.up();
+    await waitForPileToSettle(page);
+    await expect(topCardImage(page)).toHaveAttribute('src', third!);
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
+    await expect(page.locator('.polaroid-animated-wrapper-overlay')).toHaveCount(0);
+});
+
+test('reduced motion jumps straight to the new depth and lie in both directions', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await openAppAndDismissIntro(page);
+    const first = await topCardImage(page).getAttribute('src');
+    const second = await page.locator('.polaroid-mini[data-depth="1"] img').getAttribute('src');
+
+    await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+    await expect(topCardImage(page)).toHaveAttribute('src', second!);
+    await page.getByRole('button', { name: 'Previous photo', exact: true }).click();
+    await expect(topCardImage(page)).toHaveAttribute('src', first!);
+    await expect(page.locator('.polaroid-stack')).not.toHaveClass(/is-cycling/);
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
+    expect(await page.locator('.polaroid-stack').evaluate(stack =>
+        stack.getAnimations({ subtree: true }).length)).toBe(0);
 });
 
 test('a drag that stops short of the threshold changes nothing', async ({ page }) => {
@@ -179,11 +276,11 @@ test('a drag that stops short of the threshold changes nothing', async ({ page }
     await waitForPileToSettle(page);
     expect(await topCardImage(page).getAttribute('src')).toBe(first);
 
-    // An abandoned backward drag borrows the card at the back of the pile; it has
-    // to be handed back with its original photo and no leftover inline styles.
-    await expect(page.locator('.polaroid-mini.is-incoming')).toHaveCount(0);
-    const strandedStyles = await page.locator('.polaroid-mini[data-depth="3"]').getAttribute('style');
-    expect(strandedStyles ?? '').not.toContain('transform');
+    // Only the persistent lie properties may remain after a cancelled return.
+    await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
+    const properties = await page.locator('.polaroid-mini[data-depth="3"]').evaluate(card =>
+        Array.from((card as HTMLElement).style).sort());
+    expect(properties).toEqual(['--pm-tilt', '--pm-x', '--pm-y']);
 
     // And a sweep must not be mistaken for a tap.
     await expect(page.locator('.polaroid-animated-wrapper-overlay')).toHaveCount(0);
