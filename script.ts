@@ -13,6 +13,17 @@ import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/i
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
 import { INTRO_PHOTO, showIntroCard } from './src/features/overlays/introCard';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
+import { createCaption } from './src/features/opening/caption';
+
+// Dismissal, not merely arriving at the map, makes the next visit a return.
+const SEEN_KEY = 'travel-tracker:intro-seen';
+const PLANE_TEXT = 'January 2025 — landing in Tokyo';
+const LINES_TEXT = '…and everywhere since';
+const NORMAL_FADE_MS = 1000;
+const QUICK_FADE_MS = 500;
+// Removal fires leaflet.motion's Ended event; phase continuations must know
+// that this was a skip rather than permission to start the next phase.
+let skipped = false;
 
 // The static (non-animated) line layers, declared as data so they can be
 // loaded, added, and faded in with a single loop below.
@@ -79,27 +90,26 @@ function initializeMap(mapId: string) {
     return map;
 }
 
-// Helper function: fades out layers over 1 second.
+// The same fade helpers serve the normal crossfade and the quicker skip/return.
 // Leaflet's public types omit _path. These functions only touch vector layers
 // during the intro; a narrow optional field also covers an undrawn layer.
 type FadeLayer = L.Layer & { _path?: SVGPathElement };
-function fadeOutLayers(layers: L.Layer[]) {
+function fadeOutLayers(layers: L.Layer[], durationMs: number) {
     layers.forEach(layer => {
         const el = (layer as FadeLayer)._path;
         if (el) {
-            el.style.transition = 'opacity 1s';
+            el.style.transition = `opacity ${durationMs}ms`;
             el.style.opacity = '0';
         }
     });
 }
 
-// Helper function: fades in layers over 1 second.
-function fadeInLayers(layers: L.LayerGroup[]) {
+function fadeInLayers(layers: L.LayerGroup[], durationMs: number) {
     const applyFadeToElement = (featureLayer: L.Layer) => {
         const el = (featureLayer as FadeLayer)._path;
         if (el) {
             el.style.opacity = '0';
-            el.style.transition = 'opacity 1s ease-in-out';
+            el.style.transition = `opacity ${durationMs}ms ease-in-out`;
             requestAnimationFrame(() => {
                 el.style.opacity = '1';
             });
@@ -183,7 +193,7 @@ async function setupLegend() {
 }
 
 // This is separate from the legend container so hovering over About never
-// opens the key. It is created only after the first card has been dismissed.
+// opens the key. Returning visits also get it without opening the welcome card.
 function addAboutButton(landOnPile: (card: HTMLButtonElement) => Promise<void>) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -214,34 +224,60 @@ async function addZoomedPointLayers(map: L.Map) {
     }
 }
 
-// Main function to set up the map and layers.
-async function setupMap() {
-    const map = initializeMap('map');
+async function playOpening(group: L.LayerGroup, caption: ReturnType<typeof createCaption>): Promise<L.Layer[]> {
+    caption.type(PLANE_TEXT);
+    await animateMarkerAlongLine(group, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
+    if (skipped) return [];
 
-    await setupLegend();
+    caption.type(LINES_TEXT);
+    const layers = await animateChainedGeoJson(group, 'assets/lines/animation_tracks.geojson');
+    if (skipped) return [];
+    caption.remove();
+    return layers;
+}
 
-    // 1. Animate the incoming flight marker first
-    await animateMarkerAlongLine(map, 'assets/lines/incoming_flight.geojson', 'assets/icons/airplane.svg');
+async function runOpeningWithSkip(map: L.Map, group: L.LayerGroup) {
+    let requestSkip: () => void;
+    const skipRequested = new Promise<{ animatedLayers: L.Layer[]; skipped: boolean }>(resolve => {
+        requestSkip = () => resolve({ animatedLayers: [], skipped: true });
+    });
+    const skip = () => {
+        skipped = true;
+        requestSkip();
+        // onRemove cancels motion's animation frame and removes its marker.
+        // It also fires Ended: the phase guards above stop the second caption,
+        // while any chain children remain inert in this now-detached group.
+        map.removeLayer(group);
+        caption.remove();
+    };
+    const caption = createCaption(skip);
+    map.once('click', skip); // Leaflet distinguishes a click/tap from a map drag.
+    // A removed chain may never finish (its children cannot start). Racing the
+    // skip lets setup continue without waiting for that abandoned promise.
+    const result = await Promise.race([
+        playOpening(group, caption).then(animatedLayers => ({ animatedLayers, skipped: false })),
+        skipRequested,
+    ]);
+    map.off('click', skip);
+    return result;
+}
 
-    // 2. Now start the main chained animation.
-    const animatedLayers = await animateChainedGeoJson(map, 'assets/lines/animation_tracks.geojson');
-
-    // 3. Preload the static lines AND the faint flight arcs BEFORE the
-    //    crossfade. They aren't on the map yet, so the fetch latency doesn't
-    //    delay anything below. The flight arcs join the crossfade alongside the
-    //    other static lines.
+// All three paths share the same final layers, zoom gates and marker drop.
+async function showFinishedMap(map: L.Map, { animatedLayers, fadeMs }: { animatedLayers: L.Layer[]; fadeMs: number }) {
+    // Preload the static lines AND the faint flight arcs BEFORE the
+    // crossfade. They aren't on the map yet, so the fetch latency doesn't
+    // delay anything below. The flight arcs join the crossfade alongside the
+    // other static lines.
     const staticLayers = await loadStaticLineLayers();
     const flightLayer = await createArcedFlightLayer('assets/lines/flights.geojson', LineStyles.flight);
 
-    // 4. Crossfade: add the static lines (and flight arcs) and fade them in over
-    //    1s while the animated lines fade out over the same 1s, so one set of
-    //    lines visually replaces the other. We wait the full second before
-    //    continuing.
+    // Normal completion keeps the original 1s crossfade. Skip/return have no
+    // animated lines left and fade the finished routes in over just 0.5s.
     staticLayers.forEach(layer => { layer.addTo(map); });
     flightLayer.addTo(map);
-    fadeOutLayers(animatedLayers);
-    fadeInLayers([...staticLayers, flightLayer]);
-    await delay(1000);
+    fadeOutLayers(animatedLayers, fadeMs);
+    fadeInLayers([...staticLayers, flightLayer], fadeMs);
+    await delay(fadeMs);
 
     // The animated lines are now invisible (opacity 0); remove them from the map.
     animatedLayers.forEach(layer => { map.removeLayer(layer); });
@@ -251,10 +287,10 @@ async function setupMap() {
     // starts zoomed out, so they stay visible until then.
     manageLayerVisibilityByZoom(map, flightLayer, 0, FLIGHT_MAX_ZOOM);
 
-    // 5. With the lines settled, bring in the markers with a drop-in animation.
-    //    The body class scopes the drop to this initial mount (see markers.css);
-    //    we remove it once the drop has played so later re-renders (e.g. clusters
-    //    recalculating on zoom) don't replay it.
+    // With the lines settled, bring in the markers with a drop-in animation.
+    // The body class scopes the drop to this initial mount (see markers.css);
+    // we remove it once the drop has played so later re-renders (e.g. clusters
+    // recalculating on zoom) don't replay it.
     document.body.classList.add('markers-dropping');
 
     // The zoom-gated info and place points, then the photo clusters.
@@ -273,17 +309,39 @@ async function setupMap() {
     // Wait out the cascade (1.5s stagger window + 0.45s drop), then unscope it.
     await delay(2000);
     document.body.classList.remove('markers-dropping');
+}
 
-    // 6. Mount the pile on the first dismissal so the welcome print has a real
-    //    destination. Keep the promise (including a null result for no favourites)
-    //    so reopening always hands the card to the same pile, never a second one.
+async function setupMap() {
+    const map = initializeMap('map');
+    await setupLegend();
+
+    // First dismissal and returning visits create the pile at different times.
+    // Keep its promise (including a null result for no favourites) so reopening
+    // always hands the card to the same pile, never a second one.
     let pile: ReturnType<typeof showPolaroidStack> | undefined;
     const landOnPile = async (card: HTMLButtonElement) => {
         pile ??= showPolaroidStack(map, INTRO_PHOTO);
         const stack = await pile;
         if (stack) await stack.receiveIntroCard(card);
     };
-    showIntroCard({ landOnPile, onClose: () => addAboutButton(landOnPile) });
+    const returning = localStorage.getItem(SEEN_KEY) === '1';
+    if (returning) {
+        await showFinishedMap(map, { animatedLayers: [], fadeMs: QUICK_FADE_MS });
+        pile = showPolaroidStack(map, INTRO_PHOTO);
+        addAboutButton(landOnPile);
+    } else {
+        const group = L.layerGroup().addTo(map);
+        const opening = await runOpeningWithSkip(map, group);
+        await showFinishedMap(map, {
+            animatedLayers: opening.animatedLayers,
+            fadeMs: opening.skipped ? QUICK_FADE_MS : NORMAL_FADE_MS,
+        });
+        map.removeLayer(group);
+        showIntroCard({ landOnPile, onClose: () => {
+            localStorage.setItem(SEEN_KEY, '1');
+            addAboutButton(landOnPile);
+        } });
+    }
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.

@@ -30,7 +30,7 @@ Optional root `config.js` remains gitignored. Vite serves/emits an empty default
 | `npx playwright test smoke` | Smoke test only (map loads, no JS errors) | ~1s |
 | `npx playwright test full-integration` | Full integration with place markers | ~2s |
 
-In pi-box, E2E uses the browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install` here: Chromium runs in the Browserless sidecar. Without those variables (GitHub Actions), the config launches a local Chromium against `http://localhost:5173` instead. With Browserless, the config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to five minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
+In pi-box, E2E uses the browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install` here: Chromium runs in the Browserless sidecar. Without those variables (GitHub Actions), the config launches a local Chromium against `http://localhost:5173` instead. With Browserless, the config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to ten minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
 
 ### Test layout
 
@@ -47,6 +47,7 @@ tests/
     mapTestHarness.ts         # shared: animation stubs, window.L interception, intro dismissal (not a spec)
     smoke.spec.ts             # Leaflet container + tile + marker load, no JS errors
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
+    opening.spec.ts           # typed phase captions, live skip, returning visits and dismissal flag
     full-integration.spec.ts  # place markers visible after animation + zoom
     overlay-interactions.spec.ts # openOverlay dismissal paths (Escape, backdrop)
     intro-card.spec.ts        # modal flip/landing/shuffle, reopening, legend input, landscape scrolling
@@ -116,10 +117,11 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 **Entry Point:** `index.html` → `script.ts` (bundled by Vite). `src/types/geojson.ts` defines the dataset property contracts; `src/types/browser.d.ts` describes runtime config, the shared legacy-plugin global, and the optional test-captured map.
 
 **Feature-based module organization:**
-- `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker). Attach `Ended` before `addTo(map)`: auto-start can finish a zero/tiny-distance route synchronously.
+- `src/features/animations/` - Chained animation system (UUID-based triggers) plus `animateMarkerAlongLine` (the incoming flight marker). Attach `Ended` before `addTo(group)`: auto-start can finish a zero/tiny-distance route synchronously. The plane resolves its event promise first and removes itself after `await`, so a skip cannot re-enter Leaflet removal from inside `Ended`.
 - `src/features/geojson/` - GeoJSON fetching and Leaflet layer creation, including `flightArcs.ts` (synthesises curved flight lines from 2-point GeoJSON)
 - `src/features/markers/` - Photo, place, and info marker callbacks (onEachFeature/pointToLayer pattern)
 - `src/features/overlays/` - Shared overlay lifecycle, polaroid photo display, and the welcome print (`introCard.ts` + `introCard.css`)
+- `src/features/opening/` - Floating typewriter captions and skip control for the opening's two phases
 - `src/features/carousel/` - The favourite-photo carousel: a pile of mini polaroids (`polaroidStack.ts`) fed by `favouritePhotos.ts`
 - `src/utils/` - Generic, feature-agnostic map helpers (e.g. `layerVisibility.ts`)
 
@@ -138,7 +140,9 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 **Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
 
-**Intro card:** The pile is created once on first dismissal and reused on reopen; only the first-visit `onClose` adds About. `openOverlay` awaits `onClosing`'s landing and normal carousel cycle before removing the modal, so input cannot interrupt the hand-off. The welcome photo joins the carousel even if unflagged, without duplicating it on reopen. `introLanding.ts` measures the settled target and animates a front-face copy outside the scrollable modal to avoid landscape clipping. Legend hover CSS is limited to hover-capable devices so a tap can close the key.
+**Opening sequence:** Removing motion layers fires `Ended`, so phase continuations check the skip flag and chain children stay inert in the detached group. The plane removes itself after `await`, not inside `Ended`, to avoid double removal. The `travel-tracker:intro-seen = '1'` localStorage flag is written on first-visit card dismissal, not on load.
+
+**Intro card:** The handwritten back explains why the map exists; the front chin only says “start exploring →”. The pile is created once on first dismissal and reused on reopen; only the first-visit `onClose` adds About. `openOverlay` awaits `onClosing`'s landing and normal carousel cycle before removing the modal, so input cannot interrupt the hand-off. The welcome photo joins the carousel even if unflagged, without duplicating it on reopen. `introLanding.ts` measures the settled target and animates a front-face copy outside the scrollable modal to avoid landscape clipping. Legend hover CSS is limited to hover-capable devices so a tap can close the key.
 
 **Favourite photo carousel:** a pile of four askew mini polaroids, mounted on the intro's first dismissal so it can receive the welcome print. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
 

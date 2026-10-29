@@ -11,9 +11,10 @@ function browserlessEndpoint() {
     const endpoint = new URL(process.env.BROWSER_CDP_URL!);
     endpoint.pathname = `${endpoint.pathname.replace(/\/$/, '')}/playwright`;
     endpoint.searchParams.set('token', process.env.BROWSER_TOKEN!);
-    // One browser is reused across tests; Browserless's default 30-second session
-    // would expire mid-suite. This is the session lifetime, not a per-test timeout.
-    endpoint.searchParams.set('timeout', '300000');
+    // One browser is reused across tests; the suite now includes real-distance
+    // opening tests and can exceed five minutes. This is the session lifetime,
+    // not a per-test timeout.
+    endpoint.searchParams.set('timeout', '600000');
     return endpoint.href;
 }
 

@@ -2,7 +2,9 @@ import { openOverlay } from './overlayBase';
 import './introCard.css';
 
 export const INTRO_PHOTO = 'IMG_0715'; // Placeholder — the user will choose the final photo.
-const WELCOME_TEXT = "I moved to Japan in January 2025. I've been travelling around and taking some photos — here's where I've been.";
+// Placeholder for the author's own note. The opening captions now supply the
+// when/where, leaving the print to explain why this map exists.
+const NOTE_TEXT = "Hi! I moved to Japan and have been exploring it with a camera ever since. This map is where I've been, and what I saw.";
 const FLIP_MS = 700; // Keep in step with .intro-card-inner's CSS transition.
 
 /** Shows the modal welcome print, or its photo-up version when reopened. */
@@ -22,13 +24,12 @@ export function showIntroCard({ faceUp = false, landOnPile, onClose }: {
     card.innerHTML = `
         <span class="intro-card-inner">
             <span class="intro-card-face intro-card-back">
-                <span class="intro-card-hi">Hi</span>
+                <span class="intro-card-message">${NOTE_TEXT}</span>
                 <span class="intro-card-note">turn me over ↻</span>
             </span>
             <span class="intro-card-face intro-card-front">
                 <img class="intro-card-photo" src="assets/photos/display/${INTRO_PHOTO}.webp" alt="A snapshot from Japan" draggable="false">
                 <span class="intro-card-chin">
-                    <span class="intro-card-text">${WELCOME_TEXT}</span>
                     <span class="intro-card-prompt">start exploring →</span>
                 </span>
             </span>

@@ -7,12 +7,12 @@ import { fetchGeoJson } from '../geojson/fetchGeoJson';
  * The line itself is invisible; only the marker moves.
  * Returns a promise that resolves when the animation finishes.
  *
- * @param map - The Leaflet map instance.
+ * @param group - The opening's layer group; removing it stops the whole opening.
  * @param filePath - Path to the GeoJSON file (should contain a single LineString).
  * @param svgPath - Path to the SVG file used as the moving marker icon.
  * @param [speed=1500000] - Animation speed (km/h, as expected by leaflet.motion).
  */
-export async function animateMarkerAlongLine(map: L.Map, filePath: string, svgPath: string, speed = 1500000) {
+export async function animateMarkerAlongLine(group: L.LayerGroup, filePath: string, svgPath: string, speed = 1500000) {
     // Fetch the GeoJSON data
     const geojson = await fetchGeoJson<FeatureCollection<LineString>>(filePath);
     const feature = geojson.features[0];
@@ -46,11 +46,12 @@ export async function animateMarkerAlongLine(map: L.Map, filePath: string, svgPa
 
     // Subscribe before auto-starting: a zero/tiny distance can finish during
     // addTo itself, so attaching Ended afterwards could leave this pending.
-    return new Promise<void>(resolve => {
-        layer.once(L.Motion.Event.Ended, () => {
-            map.removeLayer(layer);
-            resolve();
-        });
-        layer.addTo(map);
+    await new Promise<void>(resolve => {
+        layer.once(L.Motion.Event.Ended, () => resolve());
+        layer.addTo(group);
     });
+    // Removing the group on skip also fires Ended, while Leaflet is still
+    // removing this layer. Resuming after await lets that removal finish first:
+    // synchronous cleanup inside the handler would remove the layer twice.
+    group.removeLayer(layer);
 }

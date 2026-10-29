@@ -76,12 +76,16 @@
     align-items: center;
     justify-content: center;
     gap: 24px;
+    padding: 26px;
     background: #f4f0e6;
 }
 
-.intro-card-hi {
-    font-size: 72px;
-    line-height: 1;
+/* The front still sets the shared footprint. Scale the handwriting rather
+   than letting the longer note enlarge the print on a narrow phone. */
+.intro-card-message {
+    font-size: clamp(20px, 6vw, 26px);
+    line-height: 1.2;
+    text-align: left;
 }
 
 .intro-card-note {
@@ -109,13 +113,8 @@
     line-height: 1.15;
 }
 
-.intro-card-text,
 .intro-card-prompt {
     display: block;
-}
-
-.intro-card-prompt {
-    margin-top: 12px;
     color: #777;
     font-size: 21px;
 }

@@ -5,7 +5,7 @@ import type { AnimationFeature, Animations } from '../../types/geojson';
 
 // This function handles chained animations for GeoJSON features.
 // It now returns an array of the animated layers.
-export async function animateChainedGeoJson(map: L.Map, filePath: string, styleMap: Record<string, AnimationStyle> = AnimatedLineStyles) {
+export async function animateChainedGeoJson(group: L.LayerGroup, filePath: string, styleMap: Record<string, AnimationStyle> = AnimatedLineStyles) {
   // Fetch the GeoJSON data using our existing helper.
   const geojson = await fetchGeoJson<Animations>(filePath);
   const features = geojson.features;
@@ -46,7 +46,9 @@ export async function animateChainedGeoJson(map: L.Map, filePath: string, styleM
       // segment. Subscribing afterwards would miss Ended and stall the intro.
       return new Promise<void>(resolve => {
         layer.once(L.Motion.Event.Ended, () => resolve());
-        layer.addTo(map);
+        // A detached group keeps triggered children off the map after a skip.
+        // They never auto-start, even though removing their parent fires Ended.
+        layer.addTo(group);
       });
     });
 
