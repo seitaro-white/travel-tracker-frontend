@@ -11,6 +11,7 @@ import { animateChainedGeoJson } from './src/features/animations/animateChainedF
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer';
 import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/infoViewer';
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
+import { staggerMarkerDrop } from './src/features/markers/markerDrop';
 import { INTRO_PHOTO, showIntroCard } from './src/features/overlays/introCard';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
 import { createCaption } from './src/features/opening/caption';
@@ -127,34 +128,6 @@ function fadeInLayers(layers: L.LayerGroup[], durationMs: number) {
 // use this to wait one out before starting the next stage of the intro.
 function delay(ms: number) {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
-}
-
-// Staggers the marker drop-in into a top-to-bottom "wave". Each marker's
-// animation-delay scales with its vertical screen position, so markers near the
-// top fall first and the whole cascade always fits inside MAX_STAGGER no matter
-// how many markers there are. Must be called synchronously right after the
-// markers mount (before the next paint) so the delays land before the CSS
-// animation's first frame. Relies on `body.markers-dropping` being set so the
-// inner content elements are the ones carrying the animation (see markers.css).
-function staggerMarkerDrop() {
-    const MAX_STAGGER = 1.5; // seconds spanning the first to the last marker
-    const els = document.querySelectorAll<HTMLElement>(
-        '.markers-dropping .custom-cluster-stack, ' +
-        '.markers-dropping .place-marker, ' +
-        '.markers-dropping .info-marker-icon, ' +
-        '.markers-dropping .photo-marker-image'
-    );
-    if (!els.length) return;
-
-    // Measure each marker's vertical position, then map that range onto the
-    // delay window. (A single getBoundingClientRect pass; division guards
-    // against every marker sharing the same top.)
-    const tops = [...els].map(el => el.getBoundingClientRect().top);
-    const minTop = Math.min(...tops);
-    const span = Math.max(...tops) - minTop || 1;
-    els.forEach((el, i) => {
-        el.style.animationDelay = `${((tops[i] - minTop) / span) * MAX_STAGGER}s`;
-    });
 }
 
 // Helper function to fetch HTML content from a file.
