@@ -28,6 +28,13 @@ interface Lie {
     y: number;
     tilt: number;
 }
+interface AnimationLeg {
+    from: string;
+    to: Lie;
+    zIndex: number;
+    duration: number;
+    easing?: string;
+}
 type Card = HTMLButtonElement & { _feature?: FavouritePhoto; _lie: Lie };
 interface Incoming {
     card: Card;
@@ -55,6 +62,10 @@ interface SheetDrag {
 const CARD_COUNT = 4;
 const SEND_MS = 500;
 const TURNAROUND_RATIO = 0.65;
+// A slight dip and extra left tilt make the turn read as a loose print being
+// handled rather than a rigid tile sliding sideways.
+const TURNAROUND_DROP_PX = 12;
+const TURNAROUND_TILT_DEG = 6;
 // The forward print must clear the pile before dropping underneath, or the
 // overlapping part disappears all at once at the depth switch. The extra over
 // one width covers both prints' offsets and rotated corners. Backward travel
@@ -295,8 +306,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     // turnaround, rather than interpolating numeric z-index values mid-flight.
     let running: { animation: Animation; complete: () => void } | null = null;
 
-    function playLeg(card: Card, from: string, to: Lie, zIndex: number, duration: number,
-        done: () => void, easing = CYCLE_EASING) {
+    function playLeg(card: Card, leg: AnimationLeg, done: () => void) {
+        const { from, to, zIndex, duration, easing = CYCLE_EASING } = leg;
         card.classList.add('is-moving');
         card.style.zIndex = String(zIndex);
         if (reduceMotion) {
@@ -337,8 +348,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     function turnaround(card: Card, travelRatio = TURNAROUND_RATIO): Lie {
         return {
             x: card._lie.x - card.offsetWidth * travelRatio,
-            y: card._lie.y + 12,
-            tilt: card._lie.tilt - 6,
+            y: card._lie.y + TURNAROUND_DROP_PX,
+            tilt: card._lie.tilt - TURNAROUND_TILT_DEG,
         };
     }
 
@@ -368,15 +379,20 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         applyDepths();
 
         return new Promise<void>(resolve => {
-            playLeg(leaving, from, turn, 5, SEND_MS * SEND_OUT_RATIO, () => {
-                playLeg(leaving, lieTransform(turn), destination, 0, SEND_MS * (1 - SEND_OUT_RATIO), () => {
+            playLeg(leaving, {
+                from, to: turn, zIndex: 5, duration: SEND_MS * SEND_OUT_RATIO, easing: SEND_EASING,
+            }, () => {
+                playLeg(leaving, {
+                    from: lieTransform(turn), to: destination, zIndex: 0,
+                    duration: SEND_MS * (1 - SEND_OUT_RATIO), easing: SEND_EASING,
+                }, () => {
                     settleCard(leaving, destination);
                     // Only its white edges are visible now. Recycle its photo
                     // at the back, never while it is travelling in plain sight.
                     paint(leaving, featureAt(CARD_COUNT - 1));
                     resolve();
-                }, SEND_EASING);
-            }, SEND_EASING);
+                });
+            });
         });
     }
 
@@ -393,7 +409,10 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         };
         paint(card, favourites[(topIndex - 1 + favourites.length) % favourites.length]);
         setAnimating(true);
-        playLeg(card, lieTransform(card._lie), incoming.turnaround, 0, SEND_MS * SLIP_OUT_RATIO, () => {
+        playLeg(card, {
+            from: lieTransform(card._lie), to: incoming.turnaround, zIndex: 0,
+            duration: SEND_MS * SLIP_OUT_RATIO,
+        }, () => {
             incoming.slipping = false;
             // The hand may have moved (or let go) during the slip-out. Apply
             // its latest progress only once the print has cleared the pile.
@@ -416,8 +435,10 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
             byDepth.unshift(incoming.card);
             topIndex = (topIndex - 1 + favourites.length) % favourites.length;
             applyDepths();
-            playLeg(incoming.card, lieTransform(scrubLie(incoming)), incoming.destination, 5,
-                SEND_MS * (1 - SLIP_OUT_RATIO), () => settleCard(incoming.card, incoming.destination));
+            playLeg(incoming.card, {
+                from: lieTransform(scrubLie(incoming)), to: incoming.destination, zIndex: 5,
+                duration: SEND_MS * (1 - SLIP_OUT_RATIO),
+            }, () => settleCard(incoming.card, incoming.destination));
         };
         if (incoming.slipping) incoming.onSlipped = travelIn;
         else travelIn();
@@ -426,14 +447,18 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     /** Retraces the pull-in, then slips the borrowed print back underneath. */
     function cancelPrevious(incoming: Incoming) {
         const returnToBack = () => {
-            playLeg(incoming.card, lieTransform(scrubLie(incoming)), incoming.turnaround, 5,
-                SEND_MS * (1 - SLIP_OUT_RATIO), () => {
-                    playLeg(incoming.card, lieTransform(incoming.turnaround), incoming.originalLie, 0,
-                        SEND_MS * SLIP_OUT_RATIO, () => {
-                            settleCard(incoming.card, incoming.originalLie);
-                            paint(incoming.card, featureAt(CARD_COUNT - 1));
-                        });
+            playLeg(incoming.card, {
+                from: lieTransform(scrubLie(incoming)), to: incoming.turnaround, zIndex: 5,
+                duration: SEND_MS * (1 - SLIP_OUT_RATIO),
+            }, () => {
+                playLeg(incoming.card, {
+                    from: lieTransform(incoming.turnaround), to: incoming.originalLie, zIndex: 0,
+                    duration: SEND_MS * SLIP_OUT_RATIO,
+                }, () => {
+                    settleCard(incoming.card, incoming.originalLie);
+                    paint(incoming.card, featureAt(CARD_COUNT - 1));
                 });
+            });
         };
         if (incoming.slipping) incoming.onSlipped = returnToBack;
         else returnToBack();
@@ -708,9 +733,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
 
     /** Lands the welcome photo, then reveals the next print using a normal cycle. */
     async function receiveIntroCard(card: HTMLButtonElement) {
-        // A reopened intro can be dismissed while a previous browse is still
-        // finishing. Let that short cycle settle before changing the pile order.
-        if (animating) await new Promise(resolve => setTimeout(resolve, SEND_MS));
+        // Settle any running browse before reordering the pile for the landing.
+        finishMovement();
         if (!isPhone.matches) setCollapsed(false);
 
         // Mount/reveal and opening the desktop drawer both move our destination.
