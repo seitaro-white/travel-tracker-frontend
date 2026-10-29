@@ -41,6 +41,7 @@ tests/
   geojson-schema.test.ts      # data validation for all 3 GeoJSON point files
   placeEmojis.test.ts         # dead-key check: every emoji key is used in data
   favouritePhotos.test.ts     # carousel selection + every favourite has a display image
+  markerDrop.test.ts          # marker arrival delay bounds + evenly spaced schedule
   staticAssets.test.ts        # fetched HTML fragments reference shipped images
   e2e/
     fixtures.ts              # shared test/expect exports; basemap tiles stubbed before navigation

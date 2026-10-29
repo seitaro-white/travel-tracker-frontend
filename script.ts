@@ -11,7 +11,7 @@ import { animateChainedGeoJson } from './src/features/animations/animateChainedF
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer';
 import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/infoViewer';
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
-import { staggerMarkerDrop } from './src/features/markers/markerDrop';
+import { MARKER_DROP_TOTAL_MS, staggerMarkerDrop } from './src/features/markers/markerDrop';
 import { INTRO_PHOTO, showIntroCard } from './src/features/overlays/introCard';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
 import { createCaption } from './src/features/opening/caption';
@@ -275,12 +275,12 @@ async function showFinishedMap(map: L.Map, { animatedLayers, fadeMs }: { animate
         pointToLayerForPhotos);
     photosPointLayer.addTo(map);
 
-    // Assign the staggered delays synchronously now that the markers are mounted,
-    // so the cascade is set before the animation's first frame.
+    // Assign the shuffled delays synchronously now that the markers are mounted,
+    // so their scattered arrival is set before the animation's first frame.
     staggerMarkerDrop();
 
-    // Wait out the cascade (1.5s stagger window + 0.45s drop), then unscope it.
-    await delay(2000);
+    // Keep the animation scoped until the last scheduled drop has finished.
+    await delay(MARKER_DROP_TOTAL_MS);
     document.body.classList.remove('markers-dropping');
 }
 

@@ -145,10 +145,10 @@
    We animate each marker's inner content element, never Leaflet's `_icon`
    wrapper, whose transform Leaflet itself manages for positioning.
    `both` fill mode holds the opacity-0 start state before the first frame so
-   markers don't flash at full opacity (including during each marker's staggered
+   markers don't flash at full opacity (including during each marker's shuffled
    delay), and the translateY(0) end state matches each element's normal resting
-   position. The per-marker animation-delay that creates the cascade is set
-   inline by staggerMarkerDrop() in markerDrop.ts. */
+   position. staggerMarkerDrop() in markerDrop.ts assigns evenly spaced delays
+   in shuffled order for a scattered arrival. */
 @keyframes marker-drop-in {
     from { opacity: 0; transform: translateY(-22px); }
     to   { opacity: 1; transform: translateY(0); }

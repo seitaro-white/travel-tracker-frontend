@@ -1,22 +1,13 @@
 const STAGGER_SECONDS = 1.5;
+// The final marker needs the 0.45s marker-drop-in duration from markers.css.
+export const MARKER_DROP_TOTAL_MS = (STAGGER_SECONDS + 0.45) * 1000;
 
 /** Returns one shuffled delay per marker, in seconds, across the intro window. */
 export function createMarkerDropDelays(count: number): number[] {
     // Keep the endpoints at 0 and 1.5s so the window doesn't grow with the
     // marker count. A lone marker starts immediately; an empty set stays empty.
     const spacing = STAGGER_SECONDS / Math.max(count - 1, 1);
-    const delays = Array.from({ length: count }, (_, index) => {
-        // Set endpoints explicitly: multiplying spacing back up can round
-        // slightly past 1.5s for some counts.
-        if (index === 0) return 0;
-        if (index === count - 1) return STAGGER_SECONDS;
-
-        // Jitter only the interior slots, by at most 20% of one interval.
-        // Neighbouring delays therefore stay 60–140% of an interval apart:
-        // irregular enough to feel natural, without bursts or long dead gaps.
-        const jitter = (Math.random() - 0.5) * 0.4 * spacing;
-        return index * spacing + jitter;
-    });
+    const delays = Array.from({ length: count }, (_, index) => index * spacing);
 
     // Fisher–Yates gives every ordering an equal chance. Shuffling the delays
     // removes any connection to DOM order, marker type or screen position.
