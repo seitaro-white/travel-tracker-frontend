@@ -265,9 +265,9 @@ async function runOpeningWithSkip(map: L.Map, group: L.LayerGroup) {
 // All three paths share the same final layers, zoom gates and marker drop.
 async function showFinishedMap(map: L.Map, { animatedLayers, fadeMs }: { animatedLayers: L.Layer[]; fadeMs: number }) {
     // Preload the static lines AND the faint flight arcs BEFORE the
-    //    crossfade. They aren't on the map yet, so the fetch latency doesn't
-    //    delay anything below. The flight arcs join the crossfade alongside the
-    //    other static lines.
+    // crossfade. They aren't on the map yet, so the fetch latency doesn't
+    // delay anything below. The flight arcs join the crossfade alongside the
+    // other static lines.
     const staticLayers = await loadStaticLineLayers();
     const flightLayer = await createArcedFlightLayer('assets/lines/flights.geojson', LineStyles.flight);
 
@@ -288,9 +288,9 @@ async function showFinishedMap(map: L.Map, { animatedLayers, fadeMs }: { animate
     manageLayerVisibilityByZoom(map, flightLayer, 0, FLIGHT_MAX_ZOOM);
 
     // With the lines settled, bring in the markers with a drop-in animation.
-    //    The body class scopes the drop to this initial mount (see markers.css);
-    //    we remove it once the drop has played so later re-renders (e.g. clusters
-    //    recalculating on zoom) don't replay it.
+    // The body class scopes the drop to this initial mount (see markers.css);
+    // we remove it once the drop has played so later re-renders (e.g. clusters
+    // recalculating on zoom) don't replay it.
     document.body.classList.add('markers-dropping');
 
     // The zoom-gated info and place points, then the photo clusters.
@@ -315,9 +315,20 @@ async function setupMap() {
     const map = initializeMap('map');
     await setupLegend();
 
+    // First dismissal and returning visits create the pile at different times.
+    // Keep its promise (including a null result for no favourites) so reopening
+    // always hands the card to the same pile, never a second one.
+    let pile: ReturnType<typeof showPolaroidStack> | undefined;
+    const landOnPile = async (card: HTMLButtonElement) => {
+        pile ??= showPolaroidStack(map, INTRO_PHOTO);
+        const stack = await pile;
+        if (stack) await stack.receiveIntroCard(card);
+    };
     const returning = localStorage.getItem(SEEN_KEY) === '1';
     if (returning) {
         await showFinishedMap(map, { animatedLayers: [], fadeMs: QUICK_FADE_MS });
+        pile = showPolaroidStack(map, INTRO_PHOTO);
+        addAboutButton(landOnPile);
     } else {
         const group = L.layerGroup().addTo(map);
         const opening = await runOpeningWithSkip(map, group);
@@ -326,23 +337,6 @@ async function setupMap() {
             fadeMs: opening.skipped ? QUICK_FADE_MS : NORMAL_FADE_MS,
         });
         map.removeLayer(group);
-    }
-
-    // Mount the pile on the first dismissal so the welcome print has a real
-    //    destination. Keep the promise (including a null result for no favourites)
-    //    so reopening always hands the card to the same pile, never a second one.
-    let pile: ReturnType<typeof showPolaroidStack> | undefined;
-    const landOnPile = async (card: HTMLButtonElement) => {
-        pile ??= showPolaroidStack(map, INTRO_PHOTO);
-        const stack = await pile;
-        if (stack) await stack.receiveIntroCard(card);
-    };
-    if (returning) {
-        // Reuse this promise on About dismissal too: it must land on this pile.
-        pile = showPolaroidStack(map, INTRO_PHOTO);
-        await pile;
-        addAboutButton(landOnPile);
-    } else {
         showIntroCard({ landOnPile, onClose: () => {
             localStorage.setItem(SEEN_KEY, '1');
             addAboutButton(landOnPile);
