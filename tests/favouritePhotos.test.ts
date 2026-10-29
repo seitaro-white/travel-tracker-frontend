@@ -7,16 +7,18 @@
  *   - the real photos.geojson, checked so a data change upstream can't silently
  *     empty the carousel or leave it pointing at a missing image file.
  *
- * loadFavouritePhotos() itself isn't tested here — it only glues fetchGeoJson
- * (already covered in geojsonService.test.ts) to the two functions below.
+ * Loading tests also check the unflagged welcome photo needed by the landing.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
-import { isFavouritePhoto, shuffle } from '../src/features/carousel/favouritePhotos';
+import { describe, expect, it, vi } from 'vitest';
+import { isFavouritePhoto, loadCarouselPhotos, shuffle } from '../src/features/carousel/favouritePhotos';
+import { fetchGeoJson } from '../src/features/geojson/fetchGeoJson';
 import type { PhotoFeature, PhotoProperties, Photos } from '../src/types/geojson';
+
+vi.mock('../src/features/geojson/fetchGeoJson', () => ({ fetchGeoJson: vi.fn() }));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
@@ -86,6 +88,29 @@ describe('shuffle', () => {
         const anyReordered = Array.from({ length: 20 }, () => shuffle(input))
             .some(result => result.some((value, i) => value !== input[i]));
         expect(anyReordered).toBe(true);
+    });
+});
+
+describe('loadCarouselPhotos', () => {
+    it('loads the unflagged welcome photo alongside the shuffled favourites', async () => {
+        const intro = photoFeature({ filename: 'welcome', priority: null });
+        const favourite = photoFeature({ filename: 'favourite' });
+        vi.mocked(fetchGeoJson).mockResolvedValue({ type: 'FeatureCollection', features: [intro, favourite] });
+        const photos = await loadCarouselPhotos('welcome');
+        expect(photos?.introPhoto).toEqual(intro);
+        expect(photos?.favourites).toEqual([favourite]);
+    });
+
+    it('leaves the map without a pile when no favourites are flagged', async () => {
+        vi.mocked(fetchGeoJson).mockResolvedValue({
+            type: 'FeatureCollection', features: [photoFeature({ filename: 'welcome', priority: null })],
+        });
+        expect(await loadCarouselPhotos('welcome')).toBeNull();
+    });
+
+    it('reports a selected welcome photo missing from the dataset', async () => {
+        vi.mocked(fetchGeoJson).mockResolvedValue({ type: 'FeatureCollection', features: [photoFeature()] });
+        await expect(loadCarouselPhotos('missing')).rejects.toThrow('Welcome photo not found: missing');
     });
 });
 

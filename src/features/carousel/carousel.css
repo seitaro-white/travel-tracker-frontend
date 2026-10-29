@@ -187,6 +187,12 @@
     pointer-events: none;
 }
 
+/* The travelling intro print covers this card until it lands. Visibility
+   preserves its layout so the animation can measure the actual destination. */
+.polaroid-mini.is-landing-target {
+    visibility: hidden;
+}
+
 .polaroid-mini[data-depth="0"]:hover {
     box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
 }

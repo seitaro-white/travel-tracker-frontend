@@ -11,7 +11,7 @@ import { animateChainedGeoJson } from './src/features/animations/animateChainedF
 import { onEachPhotoFeature, pointToLayerForPhotos } from './src/features/markers/photoViewer';
 import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/infoViewer';
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
-import { showIntroCard } from './src/features/overlays/introCard';
+import { INTRO_PHOTO, showIntroCard } from './src/features/overlays/introCard';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
 
 // The static (non-animated) line layers, declared as data so they can be
@@ -184,13 +184,13 @@ async function setupLegend() {
 
 // This is separate from the legend container so hovering over About never
 // opens the key. It is created only after the first card has been dismissed.
-function addAboutButton() {
+function addAboutButton(landOnPile: (card: HTMLButtonElement) => Promise<void>) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'about-button';
     button.setAttribute('aria-label', 'About this map');
     button.innerHTML = '<i class="fa fa-camera-retro" aria-hidden="true"></i>';
-    button.addEventListener('click', () => showIntroCard({ faceUp: true }));
+    button.addEventListener('click', () => showIntroCard({ faceUp: true, landOnPile }));
     document.body.appendChild(button);
 }
 
@@ -274,13 +274,16 @@ async function setupMap() {
     await delay(2000);
     document.body.classList.remove('markers-dropping');
 
-    // 6. The welcome print is the final beat. Only its first dismissal mounts
-    //    the pile and About button; reopening later has no onClose callback,
-    //    so it cannot mount a second pile.
-    showIntroCard({ onClose: () => {
-        showPolaroidStack(map);
-        addAboutButton();
-    } });
+    // 6. Mount the pile on the first dismissal so the welcome print has a real
+    //    destination. Keep the promise (including a null result for no favourites)
+    //    so reopening always hands the card to the same pile, never a second one.
+    let pile: ReturnType<typeof showPolaroidStack> | undefined;
+    const landOnPile = async (card: HTMLButtonElement) => {
+        pile ??= showPolaroidStack(map, INTRO_PHOTO);
+        const stack = await pile;
+        if (stack) await stack.receiveIntroCard(card);
+    };
+    showIntroCard({ landOnPile, onClose: () => addAboutButton(landOnPile) });
 }
 
 // Wait for the DOM to be fully loaded before initializing the map.

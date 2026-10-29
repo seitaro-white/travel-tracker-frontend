@@ -49,7 +49,7 @@ tests/
     animation-completion.spec.ts # zero-distance motion cannot stall intro setup
     full-integration.spec.ts  # place markers visible after animation + zoom
     overlay-interactions.spec.ts # openOverlay dismissal paths (Escape, backdrop)
-    intro-card.spec.ts        # modal flip/toss, reopening, legend input, landscape scrolling
+    intro-card.spec.ts        # modal flip/landing/shuffle, reopening, legend input, landscape scrolling
     carousel.spec.ts          # desktop drawer: mount, cycle, fly-to, collapse
     carousel-sheet.spec.ts    # phone: resting pile + bottom sheet (viewport set via test.use)
     roughLines.spec.ts        # hand-drawn renderer: bezier output + stable seed
@@ -57,7 +57,7 @@ tests/
 
 **E2E specs import `test` and `expect` from `fixtures.ts`**, which serves a small synthetic tile for both OpenStreetMap and Thunderforest. This keeps automated pan/zoom tests off community servers and avoids using production quota. It does not affect the local dev map. The smoke test checks Leaflet's tile-loading lifecycle against this fixture, not the external provider's availability.
 
-**E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, `dismissIntro()` (flip → wait → toss → removed), and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
+**E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, `dismissIntro()` (flip → land → shuffle → removed), and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
 
 **Viewport is what selects the carousel idiom.** `carousel.spec.ts` runs at the default viewport and therefore tests the desktop drawer; `carousel-sheet.spec.ts` sets a phone viewport with `test.use()` so the page is laid out below the 700px breakpoint from the first paint. Use `test.use()` rather than `setViewportSize()` — resizing after load exercises a transition between idioms that no real user sees.
 
@@ -138,9 +138,9 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 **Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
 
-**Intro card:** Only the first-visit `showIntroCard` call passes `onClose`, so reopening never mounts a second pile. `openOverlay`'s `onClosing` starts the toss for every dismissal path. Legend hover CSS is limited to hover-capable devices so a tap can close the key.
+**Intro card:** The pile is created once on first dismissal and reused on reopen; only the first-visit `onClose` adds About. `openOverlay` awaits `onClosing`'s landing and normal carousel cycle before removing the modal, so input cannot interrupt the hand-off. The welcome photo joins the carousel even if unflagged, without duplicating it on reopen. `introLanding.ts` measures the settled target and animates a front-face copy outside the scrollable modal to avoid landscape clipping. Legend hover CSS is limited to hover-capable devices so a tap can close the key.
 
-**Favourite photo carousel:** a pile of four askew mini polaroids, mounted as the closing beat of the intro via `showIntroCard`'s `onClose`. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
+**Favourite photo carousel:** a pile of four askew mini polaroids, mounted on the intro's first dismissal so it can receive the welcome print. It is put away differently on the two screen sizes but is **one state machine with two skins** — `is-collapsed` means "put away", and only the CSS for it differs:
 
 | | desktop (> 700px) | phone (≤ 700px) |
 |---|---|---|
@@ -149,7 +149,7 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 | arrives | open | put away (resting) |
 | way back in | the drawer handle | tap the resting pile |
 
-- **Which photos:** the `priority` property in `photos.geojson`. A photo is a favourite when `priority` is truthy and not `"0"` (47 at time of writing). `favouritePhotos.ts` is the only consumer of that field. Order is reshuffled on every page load.
+- **Which photos:** the `priority` property in `photos.geojson`. A photo is a favourite when `priority` is truthy and not `"0"` (47 at time of writing); the welcome photo is also included once it lands. `favouritePhotos.ts` is the only consumer of that field. Order is reshuffled on every page load.
 - **Only four cards exist in the DOM.** `byDepth` holds them in pile order (index 0 = top). Cycling rotates that array and repaints whichever card lands at the back, so a 47-photo pile costs the same DOM as a 4-photo one. `data-depth` is what positions each card in CSS.
 - **Card face:** a *mini* polaroid — white frame with the wide bottom chin, but no caption and no date stamp, and the photo centre-cropped to a square window. Those are held back so the blow-up is a payoff. Fed from `display/` (not `thumbnail/`) so it's sharp and already cached when the blow-up opens.
 - **The two directions are different gestures, not mirror images.** Forward, the finger is on the card being thrown away, so that card moves. Backward, the top card stays put and what tracks the finger is the *previous* photo being pulled in from the left — the card arriving, not the one you happen to be touching. Getting this wrong (moving the touched card on a backward drag) makes the gesture read as "the photo vanishes and the deck reshuffles", because the thing under your finger travels the opposite way to your hand.

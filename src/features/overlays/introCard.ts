@@ -1,12 +1,16 @@
 import { openOverlay } from './overlayBase';
 import './introCard.css';
 
-const INTRO_PHOTO = 'IMG_0715'; // Placeholder — the user will choose the final photo.
+export const INTRO_PHOTO = 'IMG_0715'; // Placeholder — the user will choose the final photo.
 const WELCOME_TEXT = "I moved to Japan in January 2025. I've been travelling around and taking some photos — here's where I've been.";
 const FLIP_MS = 700; // Keep in step with .intro-card-inner's CSS transition.
 
 /** Shows the modal welcome print, or its photo-up version when reopened. */
-export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; onClose?: () => void }) {
+export function showIntroCard({ faceUp = false, landOnPile, onClose }: {
+    faceUp?: boolean;
+    landOnPile: (card: HTMLButtonElement) => Promise<void>;
+    onClose?: () => void;
+}) {
     // A native button gives the whole print keyboard activation (Enter/Space).
     // Its children are phrasing elements, not divs or paragraphs, to keep valid
     // button markup even though CSS lays them out like a physical card.
@@ -33,12 +37,12 @@ export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; o
 
     const photo = card.querySelector<HTMLImageElement>('.intro-card-photo')!;
 
-    const { close } = openOverlay({
+    const { wrapper, close } = openOverlay({
         wrapperClass: 'intro-card-overlay',
         panel: card,
         dismissOnBackdrop: faceUp,
         dismissOnEscape: faceUp,
-        gracefulClose: true,
+        gracefulClose: false, // The landing owns the close animation; remove only once it finishes.
         // As with the photo blow-up, wait for the image before revealing the
         // print. Resolving on error also prevents a failed image from blocking entry.
         beforeShow: () => new Promise<void>(resolve => {
@@ -48,8 +52,14 @@ export function showIntroCard({ faceUp = false, onClose }: { faceUp?: boolean; o
                 photo.onerror = () => resolve();
             }
         }),
-        // All dismissal paths share the toss, including Escape/backdrop on reopen.
-        onClosing: () => card.classList.add('is-tossed'),
+        // Card, Escape and backdrop dismissal all wait for the same landing.
+        // Keep the modal wrapper mounted until the pile's introductory shuffle
+        // finishes, so input cannot interrupt the hand-off between the two.
+        onClosing: async () => {
+            wrapper.classList.add('is-landing');
+            card.classList.add('is-landing');
+            await landOnPile(card);
+        },
         onClose,
     });
 
