@@ -19,8 +19,9 @@
 
 import L from '../../lib/leaflet';
 import type { FavouritePhoto } from '../../types/geojson';
-import { loadFavouritePhotos } from './favouritePhotos';
+import { loadCarouselPhotos } from './favouritePhotos';
 import { showAnimatedPolaroid } from '../overlays/polaroidOverlay';
+import { landIntroCard } from '../overlays/introLanding';
 
 type Card = HTMLButtonElement & { _feature?: FavouritePhoto };
 interface CardDrag {
@@ -124,16 +125,15 @@ function entryTransform(progress: number) {
  * Loads the favourites, builds the pile, and slides it onto the page.
  *
  * @param map - The Leaflet map to fly when a photo is selected.
- * @returns The mounted stack container, or null when there are no favourites.
+ * @returns The pile and its intro-card hand-off, or null when there are no favourites.
  */
-export async function showPolaroidStack(map: L.Map) {
-    const favourites = await loadFavouritePhotos();
+export async function showPolaroidStack(map: L.Map, introFilename: string) {
+    const photos = await loadCarouselPhotos(introFilename);
     // Nothing is flagged as a favourite, so there is no pile to build. This is
     // an empty list rather than a failure — it's what an unflagged
     // photos.geojson produces — so we leave the map alone and say nothing.
-    if (favourites.length === 0) {
-        return null;
-    }
+    if (!photos) return null;
+    const { favourites, introPhoto } = photos;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -271,25 +271,28 @@ export async function showPolaroidStack(map: L.Map) {
         topIndex = (topIndex + 1) % favourites.length;
         applyDepths();
 
-        const settle = () => {
-            // Plant the card at the back of the pile showing its new photo,
-            // without animating the trip there.
-            withoutMotion(leaving, () => {
-                leaving.classList.remove('is-leaving');
-                leaving.style.removeProperty('--pm-drag');
-                paint(leaving, featureAt(CARD_COUNT - 1));
-            });
-            setAnimating(false);
-        };
+        return new Promise<void>(resolve => {
+            const settle = () => {
+                // Plant the card at the back of the pile showing its new photo,
+                // without animating the trip there.
+                withoutMotion(leaving, () => {
+                    leaving.classList.remove('is-leaving');
+                    leaving.style.removeProperty('--pm-drag');
+                    paint(leaving, featureAt(CARD_COUNT - 1));
+                });
+                setAnimating(false);
+                resolve();
+            };
 
-        if (reduceMotion) {
-            settle();
-            return;
-        }
-        // The keyframe starts from --pm-drag, so a flick continues into the
-        // throw instead of snapping back to centre first.
-        leaving.classList.add('is-leaving');
-        setTimeout(settle, CYCLE_MS);
+            if (reduceMotion) {
+                settle();
+                return;
+            }
+            // The keyframe starts from --pm-drag, so a flick continues into the
+            // throw instead of snapping back to centre first.
+            leaving.classList.add('is-leaving');
+            setTimeout(settle, CYCLE_MS);
+        });
     }
 
     /**
@@ -630,5 +633,41 @@ export async function showPolaroidStack(map: L.Map) {
         container.classList.remove('is-hidden');
     }));
 
-    return container;
+    /** Lands the welcome photo, then reveals the next print using a normal cycle. */
+    async function receiveIntroCard(card: HTMLButtonElement) {
+        // A reopened intro can be dismissed while a previous browse is still
+        // finishing. Let that short cycle settle before changing the pile order.
+        if (animating) await new Promise(resolve => setTimeout(resolve, CYCLE_MS));
+        if (!isPhone.matches) setCollapsed(false);
+
+        // Mount/reveal and opening the desktop drawer both move our destination.
+        // Wait for their CSS transitions before measuring the landing rectangle.
+        await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+        await Promise.all(container.getAnimations({ subtree: true }).map(animation => animation.finished));
+        setAnimating(true);
+
+        // Preserve the reader's current photo immediately behind the welcome
+        // print, and remove its old occurrence on reopen so it never duplicates.
+        const ordered = Array.from({ length: favourites.length }, (_, depth) => featureAt(depth))
+            .filter(feature => feature.properties.filename !== introPhoto.properties.filename);
+        favourites.splice(0, favourites.length, introPhoto, ...ordered);
+        topIndex = 0;
+        const receiving = byDepth.pop()!;
+        byDepth.unshift(receiving);
+        receiving.classList.add('is-landing-target');
+        byDepth.forEach((print, depth) => { paint(print, featureAt(depth)); });
+        // The borrowed back card must be at its final top-card angle before
+        // measuring; only the other three prints animate their step backwards.
+        withoutMotion(receiving, applyDepths);
+
+        await landIntroCard(card, receiving);
+        receiving.classList.remove('is-landing-target');
+        // A brief rest makes the landing legible before the next photo steps
+        // forward. The welcome photo remains browseable, including via Previous.
+        await new Promise(resolve => setTimeout(resolve, 180));
+        setAnimating(false);
+        await goNext();
+    }
+
+    return { container, receiveIntroCard };
 }

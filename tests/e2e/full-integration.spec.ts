@@ -34,7 +34,7 @@ test('place markers appear after animation, when zoomed in', async ({ page }) =>
     await expect(page.locator('.leaflet-container')).toBeVisible();
 
     // The intro is the "setup done" signal and covers the zoom controls.
-    // Flip and toss it before interacting with the map.
+    // Flip it and wait for its landing before interacting with the map.
     await dismissIntro(page);
 
     // Zoom to level 12 via the captured Leaflet map instance.

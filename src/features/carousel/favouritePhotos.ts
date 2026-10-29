@@ -57,7 +57,7 @@ export function shuffle<T>(items: readonly T[]): T[] {
 }
 
 /**
- * Loads photos.geojson and returns its favourites in a freshly shuffled order.
+ * Loads the shuffled favourites plus the welcome photo that will join them.
  *
  * We fetch the file again rather than sharing the copy the marker cluster layer
  * already parsed: it is only ~220 KB, this request is a browser cache hit
@@ -65,9 +65,18 @@ export function shuffle<T>(items: readonly T[]): T[] {
  * re-parsing it costs about a millisecond. That buys us a module with no
  * plumbing to thread through script.ts.
  *
- * @returns Shuffled favourite features.
+ * @returns The carousel's photos, or null when no favourites are flagged.
  */
-export async function loadFavouritePhotos() {
+export async function loadCarouselPhotos(introFilename: string) {
     const geojson = await fetchGeoJson<Photos>(PHOTOS_FILE);
-    return shuffle(geojson.features.filter(isFavouritePhoto));
+    const favourites = geojson.features.filter(isFavouritePhoto);
+    if (favourites.length === 0) return null;
+
+    // The welcome image need not be a flagged favourite, but once it joins the
+    // pile it needs the same filename and map coordinates as every other card.
+    const introPhoto = geojson.features.find((feature): feature is FavouritePhoto =>
+        feature.properties?.filename === introFilename && feature.geometry !== null
+    );
+    if (!introPhoto) throw new Error(`Welcome photo not found: ${introFilename}`);
+    return { favourites: shuffle(favourites), introPhoto };
 }

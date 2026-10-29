@@ -8,7 +8,7 @@
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.5s ease-in-out;
+    transition: opacity 0.5s ease-in-out, background-color 0.5s ease-out;
 }
 
 .intro-card-overlay.visible {
@@ -120,9 +120,8 @@
     font-size: 21px;
 }
 
-/* Only the opening beat of each four-second cycle rocks. Excluding tossed
-   cards matters: an animation would otherwise override the toss transform. */
-.intro-card-overlay.visible .intro-card:not(.is-flipped):not(.is-tossed) {
+/* Only the opening beat of each four-second cycle rocks. */
+.intro-card-overlay.visible .intro-card:not(.is-flipped):not(.is-landing) {
     animation: intro-wobble 4s ease-in-out 0.5s infinite;
 }
 
@@ -132,10 +131,30 @@
     8% { transform: rotate(-1deg); }
 }
 
-/* Keep this after the arrival rule, and independent of .visible: closing
-   removes .visible at the same moment the print starts flying down-left. */
-.intro-card-overlay .intro-card.is-tossed {
-    transform: translate(-70vw, 70vh) rotate(-30deg);
-    transition: transform 0.5s ease-in;
+/* Fade the scrim's colour, not the whole wrapper: the travelling print must
+   stay opaque while the map and receiving pile come back into view. */
+.intro-card-overlay.is-landing {
+    background-color: transparent;
+}
+
+.intro-card.is-landing {
+    pointer-events: none;
+}
+
+/* A temporary copy of the photo-up face travels in viewport coordinates,
+   outside the scrollable modal, so landscape scrolling cannot clip its path.
+   Its frame and chin change size while the square photo remains undistorted. */
+.intro-card-flight {
+    position: fixed;
+    z-index: 3001;
+    box-sizing: border-box;
+    margin: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    color: #555;
+    font: 23px 'Caveat', cursive;
+    text-align: center;
     pointer-events: none;
 }

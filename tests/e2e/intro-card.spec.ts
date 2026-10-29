@@ -8,7 +8,7 @@ test.beforeEach(async ({ page }) => {
     await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
 });
 
-test('first visit requires a flip then a toss, and mounts the pile once', async ({ page }) => {
+test('first visit flips, lands on one pile, and shuffles to another photo', async ({ page }) => {
     const card = page.locator('.intro-card');
     const overlay = page.locator('.intro-card-overlay');
     await expect(card).not.toHaveClass(/is-flipped/);
@@ -28,17 +28,27 @@ test('first visit requires a flip then a toss, and mounts the pile once', async 
     // Bypass Playwright's "wait until stable" click so this second input
     // really lands during the flip and proves the double-tap lock works.
     await card.dispatchEvent('click');
-    await expect(card).not.toHaveClass(/is-tossed/);
+    await expect(card).not.toHaveClass(/is-landing/);
     await page.waitForTimeout(750);
     await card.click();
-    await expect(card).toHaveClass(/is-tossed/);
+    await expect(card).toHaveClass(/is-landing/);
+    await expect(page.locator('.intro-card-flight')).toBeVisible();
+    const introSrc = await card.locator('.intro-card-photo').getAttribute('src');
+    await expect(page.locator('.polaroid-mini.is-landing-target img')).toHaveAttribute('src', introSrc!);
     await expect(overlay).toHaveCount(0);
     await expect(page.locator('.polaroid-stack')).toHaveCount(1);
+    await expect(page.locator('.polaroid-mini')).toHaveCount(4);
     await expect(page.locator('.about-button')).toBeVisible();
+    await expect(page.locator('.polaroid-mini[data-depth="0"] img')).not.toHaveAttribute('src', introSrc!);
+
+    // The welcome photo really joined the carousel; it was not merely a clone
+    // flying towards an unrelated card and disappearing at the destination.
+    await page.getByRole('button', { name: 'Previous photo' }).click();
+    await expect(page.locator('.polaroid-mini[data-depth="0"] img')).toHaveAttribute('src', introSrc!);
 });
 
 for (const dismissal of ['card', 'backdrop', 'Escape']) {
-    test(`reopens photo-up and tosses via ${dismissal} without a second pile`, async ({ page }) => {
+    test(`reopens photo-up and lands via ${dismissal} without a second pile`, async ({ page }) => {
         await dismissIntro(page);
         await page.getByRole('button', { name: 'About this map' }).click();
         const card = page.locator('.intro-card');
@@ -49,12 +59,27 @@ for (const dismissal of ['card', 'backdrop', 'Escape']) {
         else if (dismissal === 'backdrop') {
             await page.locator('.intro-card-overlay').click({ position: { x: 5, y: 5 } });
         } else await page.keyboard.press('Escape');
-        await expect(card).toHaveClass(/is-tossed/);
+        await expect(card).toHaveClass(/is-landing/);
         await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
         await expect(page.locator('.polaroid-stack')).toHaveCount(1);
         await expect(page.locator('.about-button')).toHaveCount(1);
     });
 }
+
+test('a tucked-away desktop pile opens to receive the reopened intro', async ({ page }) => {
+    await dismissIntro(page);
+    await page.getByRole('button', { name: 'Hide photos', exact: true }).click();
+    await expect(page.locator('.polaroid-stack')).toHaveClass(/is-collapsed/);
+    const previousTop = await page.locator('.polaroid-mini[data-depth="0"] img').getAttribute('src');
+    await page.getByRole('button', { name: 'About this map' }).click();
+    await expect(page.locator('.intro-card-overlay.visible')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.intro-card-flight')).toBeVisible();
+    await expect(page.locator('.polaroid-stack')).not.toHaveClass(/is-collapsed/);
+    await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
+    await expect(page.locator('.polaroid-mini[data-depth="0"] img')).toHaveAttribute('src', previousTop!);
+    await expect(page.locator('.polaroid-mini')).toHaveCount(4);
+});
 
 test('mouse clicks do not pin the hovered legend open', async ({ page }) => {
     await dismissIntro(page);
@@ -69,6 +94,20 @@ test('mouse clicks do not pin the hovered legend open', async ({ page }) => {
 test.describe('phone legend', () => {
     // Touch capability, not just width, exercises the real touch hover rules.
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test('the intro lands on the small resting pile, then reveals another photo', async ({ page }) => {
+        await page.locator('.intro-card').tap();
+        await page.waitForTimeout(750);
+        await page.locator('.intro-card').tap();
+        await expect(page.locator('.intro-card-flight')).toBeVisible();
+        await expect(page.locator('.polaroid-stack')).toHaveClass(/is-collapsed/);
+        await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
+        await expect(page.locator('.polaroid-mini')).toHaveCount(4);
+        await expect(page.locator('.polaroid-mini[data-depth="0"] img')).not.toHaveAttribute('src', /IMG_0715/);
+        await page.locator('.polaroid-mini[data-depth="0"]').tap();
+        await page.getByRole('button', { name: 'Previous photo' }).tap();
+        await expect(page.locator('.polaroid-mini[data-depth="0"] img')).toHaveAttribute('src', /IMG_0715/);
+    });
 
     test('tapping the legend toggles the key open and closed', async ({ page }) => {
         await dismissIntro(page);

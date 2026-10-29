@@ -121,16 +121,20 @@ export async function stubFavouritePhotos(page: Page, count = 8) {
     const favourites = real.features
         .filter(isFavouritePhoto)
         .slice(0, count);
+    // The welcome print is unflagged in the real data but joins the carousel
+    // when dismissed, so retain its metadata alongside the small favourite set.
+    const intro = real.features.find(feature => feature.properties?.filename === 'IMG_0715')!;
+    const features = [...favourites.filter(feature => feature !== intro), intro];
 
     await page.route('**/photos.geojson', route =>
         route.fulfill({
             contentType: 'application/json',
-            body: JSON.stringify({ type: 'FeatureCollection', features: favourites }),
+            body: JSON.stringify({ type: 'FeatureCollection', features }),
         })
     );
 }
 
-/** Flip and then toss the first-visit print, waiting for each gesture to finish. */
+/** Flip the first-visit print, then wait for its landing and introductory shuffle. */
 export async function dismissIntro(page: Page) {
     const card = page.locator('.intro-card');
     await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
@@ -151,7 +155,7 @@ export async function dismissIntro(page: Page) {
  * fading — is load-bearing on a phone. The sheet ignores taps outside itself
  * while any overlay is on screen (so that dismissing a blow-up doesn't also
  * close the sheet behind it), which means a test that starts tapping during the
- * intro's 600 ms fade-out would have those taps quietly swallowed.
+ * intro's landing/shuffle would have those taps quietly swallowed.
  */
 export async function openAppAndDismissIntro(page: Page) {
     await captureLeafletMap(page);
@@ -161,7 +165,7 @@ export async function openAppAndDismissIntro(page: Page) {
 
     await dismissIntro(page);
 
-    // The first-visit card's onClose mounts the pile only after the toss finishes.
+    // The same pile receives the welcome photo and stays mounted after landing.
     await expect(page.locator('.polaroid-stack')).toBeVisible({ timeout: 5000 });
 }
 

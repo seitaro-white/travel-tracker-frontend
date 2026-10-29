@@ -46,7 +46,7 @@ test('info overlay opens on marker click and closes via Escape and backdrop', as
 
     await page.goto('/');
 
-    // The intro is the "setup done" signal; flip and toss it first.
+    // The intro is the "setup done" signal; flip it and wait for its landing first.
     await dismissIntro(page);
 
     // Zoom in so the info layer (zoom ≥ 10) is added to the map.
