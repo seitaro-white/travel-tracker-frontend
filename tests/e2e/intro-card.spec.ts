@@ -81,6 +81,34 @@ test('a tucked-away desktop pile opens to receive the reopened intro', async ({ 
     await expect(page.locator('.polaroid-mini')).toHaveCount(4);
 });
 
+test('the key has four rows and rough line samples in the map colours', async ({ page }) => {
+    await dismissIntro(page);
+    await page.locator('.legend-icon').hover();
+    const key = page.locator('.mini-map-key');
+    await expect(key).toBeVisible();
+    const rows = key.locator('.key-item');
+    await expect(rows).toHaveCount(4);
+    await expect(rows.locator('span')).toHaveText(['Public transport', 'Walking / cycling', 'Photo', 'Places']);
+    await expect(rows.nth(2).locator('img')).toHaveAttribute('src', 'assets/photos/thumbnail/IMG_0715.webp');
+    await expect(rows.nth(3).locator('.key-icon')).toHaveText('🚉 ☕️ ⛩️ 🌲');
+
+    // LineStyles creates a Leaflet renderer, so load it in the browser rather
+    // than Node. Read the real styles instead of hard-coding a second palette.
+    const colours = await page.evaluate(async () => {
+        const modulePath = '/src/features/geojson/geojsonStyles.ts';
+        const { LineStyles } = await import(modulePath);
+        return [LineStyles.publicTransport.color, LineStyles.walking.color];
+    });
+    await expect(key.locator('svg')).toHaveCount(2);
+    for (const [index, colour] of colours.entries()) {
+        const path = rows.nth(index).locator('svg path');
+        await expect(path).toHaveCount(1);
+        // A cubic Bézier distinguishes rough.js output from a straight SVG bar.
+        await expect(path).toHaveAttribute('d', /C/);
+        await expect(path).toHaveAttribute('stroke', colour);
+    }
+});
+
 test('mouse clicks do not pin the hovered legend open', async ({ page }) => {
     await dismissIntro(page);
     const key = page.locator('.mini-map-key');

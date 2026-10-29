@@ -86,16 +86,17 @@ h1 {
 }
 
 .key-line {
-  width: 100%;
-  height: 3px;
+  width: 36px;
+  height: 12px; /* Room for the sketch around the original bar-sized stroke. */
 }
 
-.key-line-transport {
-  background-color: #ff9900; /* A solid orange line, matching LineStyles.publicTransport */
-}
-
-.key-line-personal {
-  background-color: #9933ff; /* A solid purple line */
+.key-places {
+  /* Two plain emoji per line fit the existing sample column without widening
+     the panel or squeezing its labels. */
+  display: block;
+  flex-shrink: 0;
+  font-size: 12px;
+  text-align: center;
 }
 
 .key-photo-marker {
