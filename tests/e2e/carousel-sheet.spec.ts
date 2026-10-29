@@ -22,9 +22,8 @@ import { openAppAndDismissIntro } from './mapTestHarness';
 // enough that the sheet covering its lower half still leaves map above it.
 const PHONE = { width: 390, height: 844 };
 
-// The sheet's rise and fall is a 420ms CSS transition (--pm-ease, matching
-// CYCLE_MS in polaroidStack.ts). Anything that measures geometry has to let it
-// finish first; assertions on classes do not.
+// The sheet's rise and fall is a 420ms CSS transition (--pm-ease). Anything
+// that measures geometry has to let it finish first; classes do not.
 const SHEET_MS = 420;
 
 /** Waits out the sheet transition, plus a frame or two of slack. */
@@ -160,6 +159,35 @@ test.describe('phone', () => {
         // And a sweep still leaves the map alone; only a tap commits.
         const mapAfter = await page.evaluate(() => window.__leafletMap!.getCenter());
         expect(mapAfter.lng).toBeCloseTo(mapBefore.lng, 5);
+    });
+
+    test('dragging right brings back the previous print without moving the touched print', async ({ page }) => {
+        await openAppAndDismissIntro(page);
+        await openSheet(page);
+        const top = page.locator('.polaroid-mini[data-depth="0"]');
+        const first = await top.locator('img').getAttribute('src');
+        await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+        await expect(page.locator('.polaroid-stack')).not.toHaveClass(/is-cycling/);
+        const touched = await top.elementHandle();
+        const before = (await top.boundingBox())!;
+        const start = { x: before.x + before.width / 2, y: before.y + before.height / 2 };
+
+        await page.mouse.move(start.x, start.y);
+        await page.mouse.down();
+        await page.mouse.move(start.x + 100, start.y, { steps: 6 });
+        // Hold through the slip-out to exercise scrubbing, not only release
+        // during that first leg. The touched print must stay exactly still.
+        await page.waitForTimeout(250);
+        expect(await touched!.boundingBox()).toEqual(before);
+        const arriving = page.locator('.polaroid-mini.is-moving');
+        await expect(arriving.locator('img')).toHaveAttribute('src', first!);
+        expect(await arriving.evaluate(card => getComputedStyle(card).opacity)).toBe('1');
+        await page.mouse.up();
+
+        await expect(page.locator('.polaroid-stack')).not.toHaveClass(/is-cycling/);
+        await expect(top.locator('img')).toHaveAttribute('src', first!);
+        await expect(page.locator('.polaroid-stack')).not.toHaveClass(/is-collapsed/);
+        await expect(page.locator('.polaroid-animated-wrapper-overlay')).toHaveCount(0);
     });
 
     test('dragging the sheet down dismisses it; a short drag springs back', async ({ page }) => {

@@ -63,7 +63,7 @@ tests/
 
 **No seeding hook for the carousel's shuffle.** `carousel.spec.ts` asserts behaviour (the top card changed, the map moved) rather than which photo is showing, so the random order needs no test-only surface in production code.
 
-**The pile ignores input while a card is in flight** (420ms). A test that clicks `‹`/`›` twice quickly will have the second click dropped — wait for `.is-leaving`/`.is-entering` to clear first.
+**Rapid browsing finishes the current movement immediately** before starting the new one. Wait for `.polaroid-stack.is-cycling` to clear when a test needs settled geometry.
 
 ### Key E2E constraints to know
 
@@ -150,12 +150,12 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 | way back in | the drawer handle | tap the resting pile |
 
 - **Which photos:** the `priority` property in `photos.geojson`. A photo is a favourite when `priority` is truthy and not `"0"` (47 at time of writing); the welcome photo is also included once it lands. `favouritePhotos.ts` is the only consumer of that field. Order is reshuffled on every page load.
-- **Only four cards exist in the DOM.** `byDepth` holds them in pile order (index 0 = top). Cycling rotates that array and repaints whichever card lands at the back, so a 47-photo pile costs the same DOM as a 4-photo one. `data-depth` is what positions each card in CSS.
+- **Only four cards exist in the DOM.** `byDepth` holds them in pile order (index 0 = top); cycling rotates it and repaints the card at the back. `data-depth` is z-order only, not position: each print owns its lie (`--pm-x`, `--pm-y`, `--pm-tilt`). A fresh lie is assigned only when a print travels from one end to the other.
 - **Card face:** a *mini* polaroid — white frame with the wide bottom chin, but no caption and no date stamp, and the photo centre-cropped to a square window. Those are held back so the blow-up is a payoff. Fed from `display/` (not `thumbnail/`) so it's sharp and already cached when the blow-up opens.
-- **The two directions are different gestures, not mirror images.** Forward, the finger is on the card being thrown away, so that card moves. Backward, the top card stays put and what tracks the finger is the *previous* photo being pulled in from the left — the card arriving, not the one you happen to be touching. Getting this wrong (moving the touched card on a backward drag) makes the gesture read as "the photo vanishes and the deck reshuffles", because the thing under your finger travels the opposite way to your hand.
-- **The pull-in has no keyframe**, because a drag can slow, stop and reverse. `entryTransform()` interpolates it per frame; letting go clears the inline transform and the card's own CSS transition carries it to whichever depth it ended up at. Opacity ramps to full over the first 30% only — a print is opaque, and a half-transparent card reads as a crossfade.
+- **Forward must clear the pile before the z-index switch at the turnaround**, or the overlapping part of the print disappears abruptly. This is why it travels further than backward.
+- **The two drag directions move different prints.** Forward moves the touched top print; backward leaves it still and moves the arriving print. Moves during its slip-out are applied when it finishes.
 - **`draggable="false"` on the card images is load-bearing.** Without it Chromium starts a native image drag on mousedown, fires `pointercancel`, and the swipe dies one frame in. Touch is unaffected (`touch-action: none`), so the bug is mouse-only and easy to miss.
-- **`is-cycling` on the container** is the "pile is busy" signal, mirroring the internal `animating` flag. The per-card classes are removed partway through a cycle, so they can't be used for this — the E2E spec waits on `is-cycling`.
+- **`is-cycling` on the container** is the "pile is busy" signal. `finishMovement()` runs completion explicitly because `Animation.finish()` queues its event rather than calling it synchronously.
 - **Sweeping does not move the map**; tapping the top card does. `flyTo` at zoom 13 runs *simultaneously* with the blow-up rising — the overlay's backdrop is a 40% scrim, not an opaque cover, so the flight stays visible through it. The blow-up is the unchanged `showAnimatedPolaroid`, identical to a marker click.
 - **The drawer handle sits on the pile's right edge** (desktop only — `display: none` on a phone), not in the button row, because that edge is the part still on screen once the pile has slid away. Putting it in the row would let the only way back travel off-screen with the pile.
 - **Aspect ratios force the square crop:** the favourites run 0.70 → 1.68. Anything that preserved each photo's shape would make the pile's peeking edges jump on every cycle.
