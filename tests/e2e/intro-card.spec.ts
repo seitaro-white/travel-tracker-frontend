@@ -123,18 +123,17 @@ test.describe('phone legend', () => {
 test.describe('landscape welcome print', () => {
     test.use({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
 
-    test('the welcome text and dismissal prompt can be scrolled into view on first visit and reopen', async ({ page }) => {
-        await expect(page.locator('.intro-card-hi')).toBeInViewport({ ratio: 1 });
+    test('the back note and front prompt are reachable on first visit and reopen', async ({ page }) => {
+        await expect(page.locator('.intro-card-message')).toBeInViewport({ ratio: 1 });
+        await expect(page.locator('.intro-card-note')).toBeInViewport({ ratio: 1 });
         await page.locator('.intro-card').tap();
         await page.waitForTimeout(750);
 
         const overlay = page.locator('.intro-card-overlay');
-        const text = page.locator('.intro-card-text');
         const prompt = page.locator('.intro-card-prompt');
         // Scroll the overlay itself. Checking the whole rotated prompt matters:
         // toBeVisible alone allows off-screen text.
         await overlay.evaluate(element => { element.scrollTop = element.scrollHeight; });
-        await expect(text).toBeInViewport({ ratio: 1 });
         await expect(prompt).toBeInViewport({ ratio: 1 });
         await prompt.tap();
         await expect(overlay).toHaveCount(0);
@@ -144,7 +143,6 @@ test.describe('landscape welcome print', () => {
         await expect(page.locator('.intro-card-overlay.visible')).toBeVisible();
         await expect(page.locator('.intro-card')).toHaveClass(/is-flipped/);
         await overlay.evaluate(element => { element.scrollTop = element.scrollHeight; });
-        await expect(text).toBeInViewport({ ratio: 1 });
         await expect(prompt).toBeInViewport({ ratio: 1 });
         await prompt.tap();
         await expect(overlay).toHaveCount(0);

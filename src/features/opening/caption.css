@@ -1,0 +1,59 @@
+.opening-caption {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 1000; /* Above Leaflet panes, below the photo overlays. */
+    color: #333;
+    font: 1.3rem / 1.3 'Courier New', Courier, monospace;
+    text-shadow: 0 0 3px #fff, 0 0 7px #fff, 0 0 12px #fff;
+    pointer-events: none;
+    transition: opacity 0.2s ease-out;
+}
+
+.opening-caption-text {
+    /* Reserve the longest caption's width so typing never moves the skip button. */
+    width: 38ch;
+    transition: opacity 0.2s ease-out;
+}
+
+.opening-caption-text::after {
+    content: '▌';
+    animation: opening-cursor 1s step-end infinite;
+}
+
+.opening-caption-skip {
+    flex-shrink: 0;
+    padding: 10px 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-shadow: inherit;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.opening-caption.is-fading,
+.opening-caption-text.is-fading {
+    opacity: 0;
+}
+
+@keyframes opening-cursor {
+    50% { opacity: 0; }
+}
+
+@media (max-width: 700px) {
+    .opening-caption {
+        font-size: 0.875rem;
+        gap: 12px;
+    }
+
+    .opening-caption-text {
+        width: min(38ch, calc(100vw - 104px));
+        min-height: 2.6em; /* Keep the control still when the longer caption wraps. */
+    }
+}
