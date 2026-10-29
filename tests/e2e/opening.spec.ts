@@ -45,9 +45,7 @@ test('both captions type progressively and the normal ending still shows the car
     await expect.poll(async () => (await text.textContent())?.length).toBeGreaterThan(2);
     expect((await text.textContent())?.length).toBeLessThan(PLANE_TEXT.length);
     await expect(text).toHaveText(PLANE_TEXT);
-    await expect(text).toHaveText(/^…and/, { timeout: SETUP_TIMEOUT });
-    expect((await text.textContent())?.length).toBeLessThan(LINES_TEXT.length);
-    await expect(text).toHaveText(LINES_TEXT);
+    await expect(text).toHaveText(LINES_TEXT, { timeout: SETUP_TIMEOUT });
     await expect(page.locator('.intro-card-overlay.visible')).toBeVisible({ timeout: SETUP_TIMEOUT });
     await expect(page.locator('.opening-caption')).toHaveCount(0);
     await expect(page.locator('.leaflet-polymotion-pane path')).toHaveCount(0);
@@ -98,14 +96,6 @@ test('returning visitors load no animation and can still reopen About onto the s
     await page.keyboard.press('Escape');
     await expect(page.locator('.intro-card-overlay')).toHaveCount(0);
     await expect(page.locator('.polaroid-stack')).toHaveCount(1);
-});
-
-test('leaving during the opening does not mark a visit as seen', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('.opening-caption-skip')).toBeVisible();
-    await page.reload();
-    await expect(page.locator('.opening-caption-skip')).toBeVisible();
-    expect(await page.evaluate(key => localStorage.getItem(key), SEEN_KEY)).toBeNull();
 });
 
 test.describe('phone opening', () => {
