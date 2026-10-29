@@ -69,38 +69,38 @@ h1 {
 .key-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.key-item span {
+.key-item > span {
   font-size: 0.95em;
   color: #444;
 }
 
 .key-icon {
-  width: 36px;
-  margin-right: 10px;
+  width: 54px;
+  flex-shrink: 0;
+  margin-right: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .key-line {
-  width: 100%;
-  height: 3px;
+  width: 54px;
+  height: 18px; /* Room for the stroke's hand-drawn wobble. */
 }
 
-.key-line-transport {
-  background-color: #ff9900; /* A solid orange line, matching LineStyles.publicTransport */
-}
-
-.key-line-personal {
-  background-color: #9933ff; /* A solid purple line */
+.key-places {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  font-size: 18px;
+  text-align: center;
 }
 
 .key-photo-marker {
-  width: 20px;
-  height: 20px;
+  width: 30px;
+  height: 30px;
   background-color: #ccc;
   border-radius: 50%;
   border: 1.5px solid whitesmoke;
@@ -122,14 +122,14 @@ h1 {
 .map-key-columns {
   display: flex;
   gap: 32px; /* Space between columns */
-  margin-top: 8px;
+  margin-top: 12px;
   justify-content: center; /* Center the columns horizontally */
 }
 
 .map-key-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
 }
 
 /* --- Leaflet Control Styling --- */
