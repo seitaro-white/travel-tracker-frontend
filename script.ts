@@ -159,7 +159,7 @@ function staggerMarkerDrop() {
 }
 
 // Builds the always-visible legend (hover or tap to open the mini map key) and adds
-// it to the page. Only the panel contents change; the button keeps its behaviour.
+// it to the page.
 function setupLegend() {
     // Create a container for the legend icon and the map key.
     // This container will be positioned in the top-right of the screen.

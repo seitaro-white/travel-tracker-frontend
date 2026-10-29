@@ -1,7 +1,7 @@
 import rough from 'roughjs';
 import { LineStyles } from '../geojson/geojsonStyles';
 
-/** Build the key locally so its line samples can use the map's actual styles. */
+/** Built in code so its line samples use the map's actual styles. */
 export function createMapKey(): HTMLDivElement {
     const key = document.createElement('div');
     key.className = 'map-key mini-map-key';
@@ -26,27 +26,29 @@ export function createMapKey(): HTMLDivElement {
                     <span>Photo</span>
                 </div>
                 <div class="key-item">
-                    <div class="key-icon key-places">🚉 ☕️ ⛩️ 🌲</div>
+                    <div class="key-icon key-places">
+                        <span>🚉</span><span>☕️</span><span>⛩️</span><span>🌲</span>
+                    </div>
                     <span>Places</span>
                 </div>
             </div>
         </div>`;
 
     const lineIcons = key.querySelectorAll('.key-icon');
+    // Ferries share the solid public-transport sample in the key.
     lineIcons[0].appendChild(createLineSample(LineStyles.publicTransport));
-    // Walking and cycling share a colour and weight. Ferries belong to public
-    // transport here; the key deliberately shows one solid sample for that row.
+    // Walking and cycling share a colour and weight.
     lineIcons[1].appendChild(createLineSample(LineStyles.walking));
     return key;
 }
 
-function createLineSample(style: typeof LineStyles.publicTransport | typeof LineStyles.walking): SVGSVGElement {
+function createLineSample(style: (typeof LineStyles)[keyof typeof LineStyles]): SVGSVGElement {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.classList.add('key-line');
     svg.setAttribute('viewBox', '0 0 36 12');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('opacity', String(style.opacity));
-    // Leave room above and below the old bar's centreline for rough.js's wobble.
+    // Leave room above and below the centreline for rough.js's wobble.
     // A constant seed keeps the small sketch identical on every page load.
     svg.appendChild(rough.svg(svg).line(3, 6, 33, 6, {
         seed: 10,
