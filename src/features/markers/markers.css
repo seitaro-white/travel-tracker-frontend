@@ -154,9 +154,11 @@
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Cluster stacks reuse the photo img class; their nested images must not
+   animate separately from the stack, even with no individual delay. */
 body.markers-dropping .place-marker,
 body.markers-dropping .info-marker-icon,
 body.markers-dropping .custom-cluster-stack,
-body.markers-dropping .photo-marker-image {
+body.markers-dropping .leaflet-marker-icon > .photo-marker-image {
     animation: marker-drop-in 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.02) both;
 }

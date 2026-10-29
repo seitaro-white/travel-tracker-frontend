@@ -24,11 +24,13 @@ export function createMarkerDropDelays(count: number): number[] {
  * inner content is animated, leaving Leaflet's positioning transforms alone.
  */
 export function staggerMarkerDrop() {
+    // Cluster stacks reuse the photo img class; only direct icon children
+    // get their own delay so nested photos move with the stack instead.
     const elements = document.querySelectorAll<HTMLElement>(
         '.markers-dropping .custom-cluster-stack, ' +
         '.markers-dropping .place-marker, ' +
         '.markers-dropping .info-marker-icon, ' +
-        '.markers-dropping .photo-marker-image'
+        '.markers-dropping .leaflet-marker-icon > .photo-marker-image'
     );
     // One query and one schedule mix clusters, photos, places and info rather
     // than giving each category its own burst at the start of the window.
