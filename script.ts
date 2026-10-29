@@ -13,6 +13,7 @@ import { onEachInfoFeature, pointToLayerForInfo } from './src/features/markers/i
 import { onEachPlaceFeature, pointToLayerForPlaces } from './src/features/markers/placeViewer';
 import { MARKER_DROP_TOTAL_MS, staggerMarkerDrop } from './src/features/markers/markerDrop';
 import { INTRO_PHOTO, showIntroCard } from './src/features/overlays/introCard';
+import { createMapKey } from './src/features/overlays/mapKey';
 import { showPolaroidStack } from './src/features/carousel/polaroidStack';
 import { createCaption } from './src/features/opening/caption';
 
@@ -130,16 +131,9 @@ function delay(ms: number) {
     return new Promise<void>(resolve => setTimeout(resolve, ms));
 }
 
-// Helper function to fetch HTML content from a file.
-// Returns a Promise that resolves to the HTML string.
-async function fetchHtmlFile(filePath: string) {
-    const response = await fetch(filePath);
-    return await response.text();
-}
-
 // Builds the always-visible legend (hover or tap to open the mini map key) and adds
-// it to the page. The key markup lives in miniMapKey.html.
-async function setupLegend() {
+// it to the page.
+function setupLegend() {
     // Create a container for the legend icon and the map key.
     // This container will be positioned in the top-right of the screen.
     const legendContainer = document.createElement('div');
@@ -157,9 +151,7 @@ async function setupLegend() {
     });
     legendContainer.appendChild(legendIcon);
 
-    // Fetch the mini map key HTML and insert it right after the icon.
-    const miniMapKeyHtml = await fetchHtmlFile('miniMapKey.html');
-    legendContainer.insertAdjacentHTML('beforeend', miniMapKeyHtml);
+    legendContainer.appendChild(createMapKey());
 
     // Add the complete legend container (with icon and hidden key) to the page.
     document.body.appendChild(legendContainer);
@@ -286,7 +278,7 @@ async function showFinishedMap(map: L.Map, { animatedLayers, fadeMs }: { animate
 
 async function setupMap() {
     const map = initializeMap('map');
-    await setupLegend();
+    setupLegend();
 
     // First dismissal and returning visits create the pile at different times.
     // Keep its promise (including a null result for no favourites) so reopening

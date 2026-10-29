@@ -15,7 +15,7 @@ Use Node 24 and run `npm ci` after cloning.
 - `npm run build` — emit the deployable site into gitignored `dist/`.
 - `npm run preview -- --port 5174 --strictPort` — serve the production build for verification. Browserless reaches it at `http://pi-box:5174`.
 
-`vite.config.ts` uses `base: './'`: bundle URLs stay relative under the GitHub Pages project path `/travel-tracker-frontend/`. Runtime fetch/image URLs are also relative (`assets/...`, `miniMapKey.html`). `public/` is copied unchanged into the build; do not prefix those URLs with `/` or `public/`.
+`vite.config.ts` uses `base: './'`: bundle URLs stay relative under the GitHub Pages project path `/travel-tracker-frontend/`. Runtime fetch/image URLs are also relative (`assets/...`). `public/` is copied unchanged into the build; do not prefix those URLs with `/` or `public/`.
 
 Optional root `config.js` remains gitignored. Vite serves/emits an empty default if it is absent; copy `config.example.js` to `config.js` for deliberate local configuration. Restart preview/rebuild after changing it. `.github/workflows/ci.yml` runs typecheck, unit tests, build and E2E (with its own Chromium) on every pull request into `main`; a failed run uploads the Playwright report as an artifact. The Pages workflow runs install, typecheck, unit tests, and build, then overwrites `dist/config.js` with production settings and uploads only `dist/`.
 
@@ -42,7 +42,6 @@ tests/
   placeEmojis.test.ts         # dead-key check: every emoji key is used in data
   favouritePhotos.test.ts     # carousel selection + every favourite has a display image
   markerDrop.test.ts          # marker arrival delay bounds + evenly spaced schedule
-  staticAssets.test.ts        # fetched HTML fragments reference shipped images
   e2e/
     fixtures.ts              # shared test/expect exports; basemap tiles stubbed before navigation
     mapTestHarness.ts         # shared: animation stubs, window.L interception, intro dismissal (not a spec)
@@ -139,7 +138,7 @@ The screenshot is saved in **pi-box** at `/tmp/travel-tracker.png`, not in the s
 
 **Build output:** `dist/` is now exclusively disposable Vite output. Vendored motion code lives in `src/vendor/`, so building cannot erase it.
 
-**Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, `public/assets/icons/`, plus `public/miniMapKey.html`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs.
+**Static files:** `public/assets/points/` (photos, places, info), `public/assets/lines/` (routes, animations, flights), `public/assets/photos/`, and `public/assets/icons/`. Vite serves these without transformation and copies them to the output root, preserving existing runtime URLs. The map key is built in `src/features/overlays/mapKey.ts`, with rough.js line samples styled from `LineStyles`.
 
 **Opening sequence:** Removing motion layers fires `Ended`, so phase continuations check the skip flag and chain children stay inert in the detached group. The plane removes itself after `await`, not inside `Ended`, to avoid double removal. The `travel-tracker:intro-seen = '1'` localStorage flag is written on first-visit card dismissal, not on load.
 

@@ -81,6 +81,24 @@ test('a tucked-away desktop pile opens to receive the reopened intro', async ({ 
     await expect(page.locator('.polaroid-mini')).toHaveCount(4);
 });
 
+test('the key has four rows and rough line samples in the map colours', async ({ page }) => {
+    await dismissIntro(page);
+    await page.locator('.legend-icon').hover();
+    const key = page.locator('.mini-map-key');
+    await expect(key).toBeVisible();
+    const rows = key.locator('.key-item');
+    await expect(rows).toHaveCount(4);
+    const colours = ['#ff5e00ff', '#b100c9ff'];
+    await expect(key.locator('svg')).toHaveCount(2);
+    for (const [index, colour] of colours.entries()) {
+        const path = rows.nth(index).locator('svg path');
+        await expect(path).toHaveCount(1);
+        // A cubic Bézier distinguishes rough.js output from a straight SVG bar.
+        await expect(path).toHaveAttribute('d', /C/);
+        await expect(path).toHaveAttribute('stroke', colour);
+    }
+});
+
 test('mouse clicks do not pin the hovered legend open', async ({ page }) => {
     await dismissIntro(page);
     const key = page.locator('.mini-map-key');
