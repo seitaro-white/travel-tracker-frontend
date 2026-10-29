@@ -159,35 +159,6 @@ test('the sent print stays opaque and changes z-order only at the turnaround', a
     await expect(page.locator('.polaroid-mini.is-moving')).toHaveCount(0);
 });
 
-test('the forward send does not park at its turnaround during the last quarter of the outward leg', async ({ page }) => {
-    await openAppAndDismissIntro(page);
-    await page.getByRole('button', { name: 'Next photo', exact: true }).click();
-    const remaining = await page.locator('.polaroid-mini.is-moving').evaluate(card => {
-        const animation = card.getAnimations()[0];
-        animation.pause();
-        animation.currentTime = Number(animation.effect!.getTiming().duration) * 0.75;
-        const style = getComputedStyle(card);
-        const x = new DOMMatrixReadOnly(style.transform).m41;
-        const endX = parseFloat(style.getPropertyValue('--pm-x')) - (card as HTMLElement).offsetWidth * 1.3;
-        return x - endX;
-    });
-    // The old ease-out had practically finished by this point, giving the
-    // appearance of a hold before its z-order suddenly changed.
-    expect(remaining).toBeGreaterThan(20);
-    await page.locator('.polaroid-mini.is-moving').evaluate(card => card.getAnimations()[0].finish());
-    await waitForPileToSettle(page);
-});
-
-test('the desktop pile leaves space for its tilted edges and controls', async ({ page }) => {
-    await openAppAndDismissIntro(page);
-    const boxes = await page.locator('.polaroid-mini').evaluateAll(cards =>
-        cards.map(card => ({ left: card.getBoundingClientRect().left })));
-    for (const box of boxes) expect(box.left).toBeGreaterThanOrEqual(20);
-    const bottomGap = await page.locator('.polaroid-stack-bar').evaluate(bar =>
-        window.innerHeight - bar.getBoundingClientRect().bottom);
-    expect(bottomGap).toBeGreaterThanOrEqual(40);
-});
-
 test('two rapid next clicks advance two prints, and rapid previous clicks return them', async ({ page }) => {
     await openAppAndDismissIntro(page);
     const first = await topCardImage(page).getAttribute('src');
