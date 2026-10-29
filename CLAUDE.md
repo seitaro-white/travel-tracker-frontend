@@ -17,7 +17,7 @@ Use Node 24 and run `npm ci` after cloning.
 
 `vite.config.ts` uses `base: './'`: bundle URLs stay relative under the GitHub Pages project path `/travel-tracker-frontend/`. Runtime fetch/image URLs are also relative (`assets/...`, `miniMapKey.html`). `public/` is copied unchanged into the build; do not prefix those URLs with `/` or `public/`.
 
-Optional root `config.js` remains gitignored. Vite serves/emits an empty default if it is absent; copy `config.example.js` to `config.js` for deliberate local configuration. Restart preview/rebuild after changing it. The Pages workflow runs install, typecheck, unit tests, and build, then overwrites `dist/config.js` with production settings and uploads only `dist/`.
+Optional root `config.js` remains gitignored. Vite serves/emits an empty default if it is absent; copy `config.example.js` to `config.js` for deliberate local configuration. Restart preview/rebuild after changing it. `.github/workflows/ci.yml` runs typecheck, unit tests, build and E2E (with its own Chromium) on every pull request into `main`; a failed run uploads the Playwright report as an artifact. The Pages workflow runs install, typecheck, unit tests, and build, then overwrites `dist/config.js` with production settings and uploads only `dist/`.
 
 ## Testing
 
@@ -26,11 +26,11 @@ Optional root `config.js` remains gitignored. Vite serves/emits an empty default
 | Command | What it runs | Speed |
 |---------|-------------|-------|
 | `npm test` | Vitest unit + schema + emoji tests | ~0.5s |
-| `npm run test:e2e` | All Playwright E2E specs via Browserless (one worker) | ~1–2 min |
+| `npm run test:e2e` | All Playwright E2E specs (Browserless in pi-box, local Chromium in CI; one worker) | ~5 min |
 | `npx playwright test smoke` | Smoke test only (map loads, no JS errors) | ~1s |
 | `npx playwright test full-integration` | Full integration with place markers | ~2s |
 
-E2E requires the pi-box browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install`: Chromium runs in the Browserless sidecar. The config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to five minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
+In pi-box, E2E uses the browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install` here: Chromium runs in the Browserless sidecar. Without those variables (GitHub Actions), the config launches a local Chromium against `http://localhost:5173` instead. With Browserless, the config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to five minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
 
 ### Test layout
 

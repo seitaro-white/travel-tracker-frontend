@@ -1,0 +1,46 @@
+name: CI
+
+# Runs on every pull request into main. Make the "checks" job a required status
+# check (Settings → Rules) so a PR can't be merged until it passes.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same PR makes the older run pointless; cancel it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    # Pinned rather than ubuntu-latest: `playwright install --with-deps` only
+    # knows how to install Chromium's system libraries on Ubuntu releases its
+    # version supports (24.04 at Playwright 1.60).
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      # pi-box uses the Browserless sidecar; here Playwright needs its own
+      # Chromium, plus the system libraries it depends on (--with-deps).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
