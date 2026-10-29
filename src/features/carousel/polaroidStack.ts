@@ -55,6 +55,11 @@ interface SheetDrag {
 const CARD_COUNT = 4;
 const SEND_MS = 500;
 const TURNAROUND_RATIO = 0.65;
+// The forward print must clear the pile before dropping underneath, or the
+// overlapping part disappears all at once at the depth switch. The extra over
+// one width covers both prints' offsets and rotated corners. Backward travel
+// stays shorter: its existing reveal above the pile already reads smoothly.
+const SEND_TRAVEL_RATIO = 1.3;
 const SEND_OUT_RATIO = 0.55;
 const SLIP_OUT_RATIO = 0.4;
 // Opposite tilts keep neighbouring white edges peeking out. A lie belongs to
@@ -63,6 +68,10 @@ const MIN_TILT_DEG = 2;
 const MAX_TILT_DEG = 6;
 const MAX_OFFSET_PX = 12;
 const CYCLE_EASING = 'cubic-bezier(0.18, 0.89, 0.32, 1.02)';
+// The signature ease-out spends most of a leg almost stationary at its end.
+// A symmetric ease brings the send to a brief, smooth reversal instead of
+// parking it at the turnaround and then abruptly accelerating back in.
+const SEND_EASING = 'cubic-bezier(0.4, 0, 0.6, 1)';
 // How far across the card a drag must travel to commit, as a fraction of its width.
 const DRAG_COMMIT_RATIO = 0.25;
 // Pointer movement under this many pixels counts as a tap rather than a sweep.
@@ -286,7 +295,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
     // turnaround, rather than interpolating numeric z-index values mid-flight.
     let running: { animation: Animation; complete: () => void } | null = null;
 
-    function playLeg(card: Card, from: string, to: Lie, zIndex: number, duration: number, done: () => void) {
+    function playLeg(card: Card, from: string, to: Lie, zIndex: number, duration: number,
+        done: () => void, easing = CYCLE_EASING) {
         card.classList.add('is-moving');
         card.style.zIndex = String(zIndex);
         if (reduceMotion) {
@@ -297,7 +307,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         const animation = card.animate([
             { transform: from },
             { transform: lieTransform(to) },
-        ], { duration, easing: CYCLE_EASING, fill: 'forwards' });
+        ], { duration, easing, fill: 'forwards' });
         const complete = () => {
             // Commit before cancelling the fill so there is no frame at the
             // old transform between the two legs. is-moving suppresses CSS
@@ -324,9 +334,9 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         }
     }
 
-    function turnaround(card: Card): Lie {
+    function turnaround(card: Card, travelRatio = TURNAROUND_RATIO): Lie {
         return {
-            x: card._lie.x - card.offsetWidth * TURNAROUND_RATIO,
+            x: card._lie.x - card.offsetWidth * travelRatio,
             y: card._lie.y + 12,
             tilt: card._lie.tilt - 6,
         };
@@ -351,7 +361,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         // Capture before changing depth so a forward drag continues from the
         // hand's position, not from the print's original lie.
         const from = getComputedStyle(leaving).transform;
-        const turn = turnaround(leaving);
+        const turn = turnaround(leaving, SEND_TRAVEL_RATIO);
         const destination = randomLie(byDepth[CARD_COUNT - 1]._lie.tilt);
         byDepth.push(byDepth.shift()!);
         topIndex = (topIndex + 1) % favourites.length;
@@ -365,8 +375,8 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
                     // at the back, never while it is travelling in plain sight.
                     paint(leaving, featureAt(CARD_COUNT - 1));
                     resolve();
-                });
-            });
+                }, SEND_EASING);
+            }, SEND_EASING);
         });
     }
 
@@ -429,7 +439,7 @@ export async function showPolaroidStack(map: L.Map, introFilename: string) {
         else returnToBack();
     }
 
-    /** Previous is the send-to-back path in reverse: out below, in above. */
+    /** Pulls the bottom print out below the pile, then returns it above. */
     function goPrevious() {
         finishMovement();
         commitPrevious(liftIncoming());
