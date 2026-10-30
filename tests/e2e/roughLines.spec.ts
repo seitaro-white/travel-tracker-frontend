@@ -4,7 +4,7 @@ import type { LatLngTuple, Layer } from 'leaflet';
 // These tests intentionally inspect/redraw Leaflet 1.9.4's private SVG paths.
 // Keep the private contract confined to this test rather than broad `any` casts.
 type VectorLayer = Layer & { _path?: SVGPathElement; _reset?: () => void };
-import { captureLeafletMap, stubIntroAnimations, stubFavouritePhotos, SETUP_TIMEOUT } from './mapTestHarness';
+import { openFinishedMap } from './mapTestHarness';
 
 /**
  * The hand-drawn line renderer (src/features/geojson/roughRenderer.ts).
@@ -41,30 +41,18 @@ async function staticLinePaths(page: Page) {
     });
 }
 
-test.beforeEach(async ({ page }) => {
-    await captureLeafletMap(page);
-    await stubIntroAnimations(page);
-    await stubFavouritePhotos(page, 8);
-    await page.goto('/');
-    // The intro overlay is every spec's "setup finished" signal.
-    await page.waitForSelector('.intro-card', { timeout: SETUP_TIMEOUT });
+test('static lines use hand-drawn paths which remain stable across redraws', async ({ page }) => {
+    await openFinishedMap(page);
     await page.evaluate((c) => window.__leafletMap!.setView(c, 12, { animate: false }), TOKYO);
-});
-
-test('static lines are drawn as hand-drawn paths, not straight segments', async ({ page }) => {
-    const paths = await staticLinePaths(page);
-    expect(paths.length).toBeGreaterThan(0);
+    const before = await staticLinePaths(page);
+    expect(before.length).toBeGreaterThan(0);
 
     // Leaflet's own pointsToPath emits only M and L commands. rough.js draws
     // every segment as a bezier, so a C command is proof the line went through
     // our renderer rather than falling back to the default one — which is
     // exactly what happens if the `renderer` option stops reaching the Polyline
     // constructor (see createGeoJsonLineLayer in geojsonService.ts).
-    expect(paths.some((d) => d.includes('C'))).toBe(true);
-});
-
-test('the wobble is stable across redraws, so lines do not shimmer', async ({ page }) => {
-    const before = await staticLinePaths(page);
+    expect(before.some((d) => d.includes('C'))).toBe(true);
 
     // _reset() reprojects and redraws every path. The map has not moved, so the
     // pixel coordinates fed to rough are identical — and with a stable per-layer
