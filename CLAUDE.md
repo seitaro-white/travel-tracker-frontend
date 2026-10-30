@@ -23,42 +23,22 @@ Optional root `config.js` remains gitignored. Vite serves/emits an empty default
 
 ### Test commands
 
-| Command | What it runs | Speed |
-|---------|-------------|-------|
-| `npm test` | Vitest unit + schema + emoji tests | ~0.5s |
-| `npm run test:e2e` | All Playwright E2E specs (Browserless in pi-box, local Chromium in CI; one worker) | ~5 min |
-| `npx playwright test smoke` | Smoke test only (map loads, no JS errors) | ~1s |
-| `npx playwright test full-integration` | Full integration with place markers | ~2s |
+| Command | What it runs |
+|---------|-------------|
+| `npm test` | Vitest unit + schema + emoji tests |
+| `npm run test:e2e` | All Playwright E2E specs (Browserless in pi-box, local Chromium in CI; one worker) |
+| `npx playwright test smoke` | Basemap startup, native zoom ceiling and provider selection |
+| `npx playwright test map-layers` | Real point data, place/info visibility and info-overlay dismissal |
 
 In pi-box, E2E uses the browser overlay's `BROWSER_CDP_URL` and `BROWSER_TOKEN`. Do **not** run `npx playwright install` here: Chromium runs in the Browserless sidecar. Without those variables (GitHub Actions), the config launches a local Chromium against `http://localhost:5173` instead. With Browserless, the config converts the CDP URL to Browserless's `/playwright` endpoint for `use.connectOptions`, limits workers to one, and extends the browser session to ten minutes (the default is only 30 seconds). Each test still gets a fresh context. The suite starts `npm run dev` automatically unless a server is already listening; readiness uses localhost, while browser navigation uses `http://pi-box:5173`. Use relative URLs such as `page.goto('/')` in specs so they respect `baseURL`.
 
 ### Test layout
 
-```
-tests/
-  sanity.test.ts              # trivial 1+1 tooling check
-  geojsonService.test.ts      # unit tests for fetchGeoJson() (3 code paths)
-  geojson-schema.test.ts      # data validation for all 3 GeoJSON point files
-  placeEmojis.test.ts         # dead-key check: every emoji key is used in data
-  favouritePhotos.test.ts     # carousel selection + every favourite has a display image
-  markerDrop.test.ts          # marker arrival delay bounds + evenly spaced schedule
-  e2e/
-    fixtures.ts              # shared test/expect exports; basemap tiles stubbed before navigation
-    mapTestHarness.ts         # shared: animation stubs, window.L interception, intro dismissal (not a spec)
-    smoke.spec.ts             # Leaflet container + tile + marker load, no JS errors
-    animation-completion.spec.ts # zero-distance motion cannot stall intro setup
-    opening.spec.ts           # typed phase captions, live skip, returning visits and dismissal flag
-    full-integration.spec.ts  # place markers visible after animation + zoom
-    overlay-interactions.spec.ts # openOverlay dismissal paths (Escape, backdrop)
-    intro-card.spec.ts        # modal flip/landing/shuffle, reopening, legend input, landscape scrolling
-    carousel.spec.ts          # desktop drawer: mount, cycle, fly-to, collapse
-    carousel-sheet.spec.ts    # phone: resting pile + bottom sheet (viewport set via test.use)
-    roughLines.spec.ts        # hand-drawn renderer: bezier output + stable seed
-```
+See [tests/readme.md](tests/readme.md) for the current inventory, behavioural coverage and limits. Keep that as the authoritative coverage description rather than duplicating the file list here.
 
 **E2E specs import `test` and `expect` from `fixtures.ts`**, which serves a small synthetic tile for both OpenStreetMap and Thunderforest. This keeps automated pan/zoom tests off community servers and avoids using production quota. It does not affect the local dev map. The smoke test checks Leaflet's tile-loading lifecycle against this fixture, not the external provider's availability.
 
-**E2E specs share `mapTestHarness.ts`** for the animation stubs, the `window.__leafletMap` capture, `dismissIntro()` (flip → land → shuffle → removed), and `openAppAndDismissIntro()` (stubs → load → dismiss intro → pile mounted) — add new specs against that rather than copying the scaffolding.
+**E2E specs share `mapTestHarness.ts`** for animation stubs, `window.__leafletMap` capture, `dismissIntro()` (flip → land → shuffle → removed), and `openFinishedMap()` (returning-visitor flag → reduced photo data → settled pile). Use returning setup outside opening/first-visit tests; do not replay intro dismissal in every interaction test. `waitForAnimations()` waits for finite motion without copying CSS durations.
 
 **Viewport is what selects the carousel idiom.** `carousel.spec.ts` runs at the default viewport and therefore tests the desktop drawer; `carousel-sheet.spec.ts` sets a phone viewport with `test.use()` so the page is laid out below the 700px breakpoint from the first paint. Use `test.use()` rather than `setViewportSize()` — resizing after load exercises a transition between idioms that no real user sees.
 
@@ -68,15 +48,15 @@ tests/
 
 ### Key E2E constraints to know
 
-**Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `src/utils/layerVisibility.ts`, wired up from `script.ts`). The full integration test handles this by:
-1. Intercepting `incoming_flight.geojson` and `animation_tracks.geojson` via `page.route()` and returning 2-point stub GeoJSON — the animation chain then completes in ~10ms instead of 20–30 seconds.
+**Place/info markers only appear at zoom ≥ 10** (enforced by `manageLayerVisibilityByZoom` in `src/utils/layerVisibility.ts`, wired up from `script.ts`). The map-layer test handles this by:
+1. Setting the existing returning-visitor localStorage flag before load, bypassing opening motion while retaining the full point dataset.
 2. Defining a setter on `window.L` via `page.addInitScript()`. `leafletGlobal.ts` assigns the shared npm Leaflet object before the app runs; the setter wraps its mutable `map()` factory and stores the result as `window.__leafletMap`. This works in Vite dev and production without a production-only test hook.
 3. Calling `window.__leafletMap.setZoom(12, { animate: false })` to zoom in and trigger `zoomend`.
 
 **Leaflet has no public map registry** — `document.getElementById('map')._leaflet_map` does NOT exist in Leaflet 1.9.4. The `window.L` interception pattern (in `captureLeafletMap()` in `mapTestHarness.ts`) is the correct way to get programmatic access to the map in tests.
 
 ### Known data bug (tracked in todo.MD)
-`public/assets/points/photos.geojson` feature index 748 is a blank record (`geometry: null`, all properties null). The schema test logs it but doesn't fail on it.
+`public/assets/points/photos.geojson` feature index 748 is a blank record (`geometry: null`, all properties null). The schema tests skip coordinates for null geometries; favourite-selection tests reject unusable photo metadata.
 
 ## Ad hoc browser testing with Browserless
 
